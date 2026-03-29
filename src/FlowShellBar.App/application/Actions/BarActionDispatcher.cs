@@ -25,7 +25,8 @@ public sealed class BarActionDispatcher : IBarActionDispatcher
                 break;
 
             case BarActionKind.ToggleOverview:
-                _logger.Info("Action invoked: toggle_overview (stub).");
+                _logger.Info("Action invoked: toggle_overview.");
+                await _barModelMutator.ToggleOverviewAsync(cancellationToken);
                 break;
 
             case BarActionKind.OpenStatusPanel:

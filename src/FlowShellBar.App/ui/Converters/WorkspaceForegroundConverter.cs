@@ -8,8 +8,8 @@ namespace FlowShellBar.App.Ui.Converters;
 
 public sealed class WorkspaceForegroundConverter : IValueConverter
 {
-    private static readonly SolidColorBrush ActiveBrush = new(Colors.White);
-    private static readonly SolidColorBrush InactiveBrush = new(Color.FromArgb(255, 200, 206, 219));
+    private static readonly SolidColorBrush ActiveBrush = new(Color.FromArgb(255, 244, 238, 234));
+    private static readonly SolidColorBrush InactiveBrush = new(Color.FromArgb(255, 153, 141, 133));
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {

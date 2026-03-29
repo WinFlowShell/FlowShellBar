@@ -9,23 +9,22 @@ namespace FlowShellBar.App.Host;
 
 public sealed class AppBootstrapper : IAsyncDisposable
 {
-    private MockBarModelProvider? _barModelProvider;
+    private BarRuntimeModelProvider? _barModelProvider;
 
     public IAppLogger Logger { get; private set; } = new FileAppLogger();
 
     public async Task<BootstrapContext> InitializeAsync(DispatcherQueue dispatcherQueue)
     {
         Logger.Info("Bootstrapping FlowShellBar.App.");
-        Logger.Info("Runtime mode selected: standalone.");
 
-        var flowShellCoreAdapter = new FlowShellCoreAdapterStub(Logger);
-        var flowtileWmAdapter = new FlowtileWmAdapterStub(Logger);
+        var flowShellCoreAdapter = new FlowShellCoreIpcAdapter(Logger);
+        var flowtileWmAdapter = new FlowtileWmIpcAdapter(Logger);
         var systemMetricsAdapter = new SystemMetricsAdapterStub(Logger);
 
         await flowShellCoreAdapter.TryConnectAsync();
         await flowtileWmAdapter.TryConnectAsync();
 
-        _barModelProvider = new MockBarModelProvider(
+        _barModelProvider = new BarRuntimeModelProvider(
             flowShellCoreAdapter,
             flowtileWmAdapter,
             systemMetricsAdapter,

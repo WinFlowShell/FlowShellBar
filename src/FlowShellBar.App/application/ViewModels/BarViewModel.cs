@@ -1,12 +1,14 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
+using FlowShellBar.App.Application;
 using FlowShellBar.App.Application.Actions;
 using FlowShellBar.App.Application.Models;
 using FlowShellBar.App.Diagnostics;
 using FlowShellBar.App.Integrations;
 
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
 
 namespace FlowShellBar.App.Application.ViewModels;
 
@@ -18,12 +20,21 @@ public sealed class BarViewModel : BindableBase
 
     private string _activeWindowAppName = string.Empty;
     private string _activeWindowTitle = string.Empty;
+    private string _activeWorkspaceLabel = string.Empty;
+    private string _memoryUsageText = string.Empty;
+    private string _cpuUsageText = string.Empty;
+    private string _temperatureText = string.Empty;
     private string _currentTime = string.Empty;
     private string _currentDate = string.Empty;
     private string _runtimeModeLabel = string.Empty;
+    private string _connectionStateLabel = string.Empty;
     private bool _isNetworkAvailable;
     private bool _isAudioAvailable;
     private bool _hasNotifications;
+    private BarSurfacePlacementModel _surfacePlacement = BarSurfacePlacementModel.Fallback;
+    private Brush _connectionStateBackground = CreateBrush("#202836");
+    private Brush _connectionStateBorderBrush = CreateBrush("#303A4B");
+    private Brush _connectionStateForeground = CreateBrush("#A1AEC4");
 
     public BarViewModel(
         DispatcherQueue dispatcherQueue,
@@ -74,6 +85,30 @@ public sealed class BarViewModel : BindableBase
         private set => SetProperty(ref _activeWindowTitle, value);
     }
 
+    public string ActiveWorkspaceLabel
+    {
+        get => _activeWorkspaceLabel;
+        private set => SetProperty(ref _activeWorkspaceLabel, value);
+    }
+
+    public string MemoryUsageText
+    {
+        get => _memoryUsageText;
+        private set => SetProperty(ref _memoryUsageText, value);
+    }
+
+    public string CpuUsageText
+    {
+        get => _cpuUsageText;
+        private set => SetProperty(ref _cpuUsageText, value);
+    }
+
+    public string TemperatureText
+    {
+        get => _temperatureText;
+        private set => SetProperty(ref _temperatureText, value);
+    }
+
     public string CurrentTime
     {
         get => _currentTime;
@@ -89,13 +124,50 @@ public sealed class BarViewModel : BindableBase
     public string RuntimeModeLabel
     {
         get => _runtimeModeLabel;
-        private set => SetProperty(ref _runtimeModeLabel, value);
+        private set
+        {
+            if (SetProperty(ref _runtimeModeLabel, value))
+            {
+                OnPropertyChanged(nameof(RuntimeModeShortLabel));
+            }
+        }
     }
+
+    public string RuntimeModeShortLabel => RuntimeModeLabel switch
+    {
+        "SESSION" => "S",
+        "STANDALONE" => "O",
+        _ => RuntimeModeLabel.Length > 0 ? RuntimeModeLabel.Substring(0, 1) : string.Empty
+    };
 
     public bool IsNetworkAvailable
     {
         get => _isNetworkAvailable;
         private set => SetProperty(ref _isNetworkAvailable, value);
+    }
+
+    public string ConnectionStateLabel
+    {
+        get => _connectionStateLabel;
+        private set => SetProperty(ref _connectionStateLabel, value);
+    }
+
+    public Brush ConnectionStateBackground
+    {
+        get => _connectionStateBackground;
+        private set => SetProperty(ref _connectionStateBackground, value);
+    }
+
+    public Brush ConnectionStateBorderBrush
+    {
+        get => _connectionStateBorderBrush;
+        private set => SetProperty(ref _connectionStateBorderBrush, value);
+    }
+
+    public Brush ConnectionStateForeground
+    {
+        get => _connectionStateForeground;
+        private set => SetProperty(ref _connectionStateForeground, value);
     }
 
     public bool IsAudioAvailable
@@ -108,6 +180,12 @@ public sealed class BarViewModel : BindableBase
     {
         get => _hasNotifications;
         private set => SetProperty(ref _hasNotifications, value);
+    }
+
+    public BarSurfacePlacementModel SurfacePlacement
+    {
+        get => _surfacePlacement;
+        private set => SetProperty(ref _surfacePlacement, value);
     }
 
     private void OnModelChanged(object? sender, BarModel model)
@@ -124,16 +202,47 @@ public sealed class BarViewModel : BindableBase
     private void ApplyModel(BarModel model)
     {
         RuntimeModeLabel = model.RuntimeMode.ToString().ToUpperInvariant();
+        ConnectionStateLabel = model.ConnectionState.ToString().ToUpperInvariant();
         ActiveWindowAppName = model.ActiveWindowAppName;
         ActiveWindowTitle = model.ActiveWindowTitle;
+        ActiveWorkspaceLabel = model.ActiveWorkspaceLabel;
+        MemoryUsageText = model.ResourceMetrics.MemoryUsagePercent.ToString();
+        CpuUsageText = model.ResourceMetrics.CpuUsagePercent.ToString();
+        TemperatureText = model.ResourceMetrics.TemperatureCelsius.ToString();
         CurrentTime = model.CurrentTime;
         CurrentDate = model.CurrentDate;
+        SurfacePlacement = model.SurfacePlacement;
         IsNetworkAvailable = model.StatusCluster.IsNetworkAvailable;
         IsAudioAvailable = model.StatusCluster.IsAudioAvailable;
         HasNotifications = model.StatusCluster.HasNotifications;
+        ApplyConnectionPalette(model.ConnectionState);
 
         SyncWorkspaces(model.Workspaces);
-        _logger.Info($"Bar model applied. Active workspace: {model.Workspaces.FirstOrDefault(x => x.IsActive)?.Id ?? -1}.");
+        _logger.Info($"Bar model applied. Active workspace: {model.Workspaces.FirstOrDefault(x => x.IsActive)?.Id ?? -1}; visible workspaces: {model.Workspaces.Count}.");
+    }
+
+    private void ApplyConnectionPalette(BarConnectionState connectionState)
+    {
+        switch (connectionState)
+        {
+            case BarConnectionState.Live:
+                ConnectionStateBackground = CreateBrush("#183426");
+                ConnectionStateBorderBrush = CreateBrush("#2D7050");
+                ConnectionStateForeground = CreateBrush("#CBF7DC");
+                break;
+
+            case BarConnectionState.Degraded:
+                ConnectionStateBackground = CreateBrush("#3A2C13");
+                ConnectionStateBorderBrush = CreateBrush("#8A6B23");
+                ConnectionStateForeground = CreateBrush("#FFE8A3");
+                break;
+
+            default:
+                ConnectionStateBackground = CreateBrush("#342322");
+                ConnectionStateBorderBrush = CreateBrush("#7A4741");
+                ConnectionStateForeground = CreateBrush("#FFD8D3");
+                break;
+        }
     }
 
     private void SyncWorkspaces(IReadOnlyList<WorkspaceModel> workspaces)
@@ -176,5 +285,25 @@ public sealed class BarViewModel : BindableBase
                 workspaceId = 0;
                 return false;
         }
+    }
+
+    private static Brush CreateBrush(string color)
+    {
+        var hex = color.TrimStart('#');
+        if (hex.Length == 6)
+        {
+            hex = $"FF{hex}";
+        }
+
+        if (hex.Length != 8)
+        {
+            throw new ArgumentException("Expected #RRGGBB or #AARRGGBB color.", nameof(color));
+        }
+
+        return new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(
+            a: Convert.ToByte(hex.Substring(0, 2), 16),
+            r: Convert.ToByte(hex.Substring(2, 2), 16),
+            g: Convert.ToByte(hex.Substring(4, 2), 16),
+            b: Convert.ToByte(hex.Substring(6, 2), 16)));
     }
 }

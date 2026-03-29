@@ -5,18 +5,69 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converters="using:FlowShellBar.App.Ui.Converters"
+    xmlns:imaging="using:Microsoft.UI.Xaml.Media.Imaging"
     mc:Ignorable="d"
     Title="FlowShellBar">
 
     <Grid
         x:Name="ShellRoot"
-        Background="#161B24">
+        Background="#12100F">
 
         <Grid.Resources>
             <converters:WorkspaceActiveToBrushConverter x:Key="WorkspaceActiveToBrushConverter" />
             <converters:WorkspaceForegroundConverter x:Key="WorkspaceForegroundConverter" />
             <converters:WorkspaceOccupiedBorderConverter x:Key="WorkspaceOccupiedBorderConverter" />
             <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+
+            <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#12100F" />
+            <SolidColorBrush x:Key="ShellAccentBrush" Color="#1B1715" />
+            <SolidColorBrush x:Key="PrimaryTextBrush" Color="#EEE6E0" />
+            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#BEB3AB" />
+            <SolidColorBrush x:Key="MutedTextBrush" Color="#867B74" />
+            <SolidColorBrush x:Key="AlertBrush" Color="#DA4F52" />
+
+            <Style x:Key="MonoTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="JetBrains Mono" />
+            </Style>
+
+            <Style x:Key="SmallTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
+                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="MutedSmallTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
+                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                <Setter Property="FontSize" Value="8" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="PrimaryTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
+                <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="DateTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
+                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="GhostIconButtonStyle" TargetType="Button">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Width" Value="24" />
+                <Setter Property="Height" Value="24" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                <Setter Property="FontFamily" Value="JetBrains Mono" />
+            </Style>
 
             <MenuFlyout x:Key="LeftZoneFlyout">
                 <MenuFlyoutItem Text="Open Launcher" Click="OnOpenLauncherFlyoutClick" />
@@ -34,60 +85,54 @@
 
         <Border
             Margin="0"
-            Padding="0,4"
-            Background="#161B24"
-            BorderBrush="Transparent"
-            BorderThickness="0"
-            CornerRadius="0">
+            Padding="7,0"
+            Background="{StaticResource ShellSurfaceBrush}"
+            BorderThickness="0">
 
-            <Grid ColumnSpacing="12">
+            <Grid
+                Height="37"
+                VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Grid
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
                     ContextFlyout="{StaticResource LeftZoneFlyout}"
+                    Tapped="OnLeftZoneTapped"
                     PointerWheelChanged="OnLeftZonePointerWheelChanged">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Button
-                        Width="28"
-                        Height="28"
-                        Padding="0"
-                        Margin="0,0,10,0"
-                        Command="{Binding OpenLauncherCommand}"
-                        Background="#253040"
-                        BorderBrush="#354355"
-                        BorderThickness="1"
-                        CornerRadius="10">
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="FS" />
-                    </Button>
+                    <Image
+                        Margin="0,0,6,0"
+                        Width="14"
+                        Height="14"
+                        VerticalAlignment="Center"
+                        IsHitTestVisible="False">
+                        <Image.Source>
+                            <imaging:SvgImageSource UriSource="ms-appx:///Assets/Icons/ShellEntryStar.svg" />
+                        </Image.Source>
+                    </Image>
 
                     <StackPanel
                         Grid.Column="1"
-                        Orientation="Horizontal"
+                        MaxWidth="300"
                         VerticalAlignment="Center"
-                        Spacing="8">
+                        Spacing="-2">
                         <TextBlock
-                            Foreground="#A1AEC4"
-                            FontSize="10"
-                            FontWeight="SemiBold"
-                            Text="{Binding ActiveWindowAppName}" />
+                            Style="{StaticResource MutedSmallTextStyle}"
+                            Text="{Binding ActiveWindowAppName}"
+                            TextTrimming="CharacterEllipsis" />
                         <TextBlock
-                            Foreground="#F5F7FB"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="{Binding ActiveWindowTitle}"
+                            Style="{StaticResource PrimaryTextStyle}"
+                            Text="{Binding ActiveWorkspaceLabel}"
                             TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                 </Grid>
@@ -97,142 +142,141 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
-                    Spacing="8"
+                    Spacing="12"
                     ContextFlyout="{StaticResource WorkspaceFlyout}">
 
-                    <Border
-                        Padding="7,2"
-                        HorizontalAlignment="Center"
-                        Background="#202836"
-                        BorderBrush="#303A4B"
-                        BorderThickness="1"
-                        CornerRadius="999">
-                        <TextBlock
-                            Foreground="#A1AEC4"
-                            FontSize="10"
-                            FontWeight="SemiBold"
-                            Text="{Binding RuntimeModeLabel}" />
-                    </Border>
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="7"
+                        VerticalAlignment="Center">
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="3"
+                            VerticalAlignment="Center">
+                            <Ellipse
+                                Width="6"
+                                Height="6"
+                                Fill="#C8CFDD"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Text="{Binding MemoryUsageText}" />
+                        </StackPanel>
+
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="3"
+                            VerticalAlignment="Center">
+                            <Ellipse
+                                Width="6"
+                                Height="6"
+                                Fill="#D4D7E2"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Text="{Binding CpuUsageText}" />
+                        </StackPanel>
+
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="3"
+                            VerticalAlignment="Center">
+                            <Ellipse
+                                Width="6"
+                                Height="6"
+                                Fill="#B8BCC7"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Text="{Binding TemperatureText}" />
+                        </StackPanel>
+                    </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding Workspaces}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="8" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
 
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Button
-                                    Width="28"
-                                    Height="24"
+                                    Width="14"
+                                    Height="14"
                                     Padding="0"
-                                    Background="{Binding IsActive, Converter={StaticResource WorkspaceActiveToBrushConverter}}"
-                                    Foreground="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}"
-                                    BorderBrush="{Binding IsOccupied, Converter={StaticResource WorkspaceOccupiedBorderConverter}}"
-                                    BorderThickness="1"
-                                    CornerRadius="999"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="7"
                                     Command="{Binding DataContext.SwitchWorkspaceCommand, ElementName=ShellRoot}"
                                     CommandParameter="{Binding Id}">
-                                    <TextBlock
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        FontSize="10"
-                                        FontWeight="SemiBold"
-                                        Text="{Binding Label}" />
+                                    <Grid>
+                                        <Ellipse
+                                            Width="14"
+                                            Height="14"
+                                            Fill="{Binding IsActive, Converter={StaticResource WorkspaceActiveToBrushConverter}}" />
+                                        <Ellipse
+                                            Width="8"
+                                            Height="8"
+                                            Stroke="{Binding IsOccupied, Converter={StaticResource WorkspaceOccupiedBorderConverter}}"
+                                            StrokeThickness="1.1" />
+                                        <Ellipse
+                                            Width="2.5"
+                                            Height="2.5"
+                                            Fill="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}" />
+                                    </Grid>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </StackPanel>
-
-                <Grid
-                    Grid.Column="2"
-                    HorizontalAlignment="Right"
-                    ContextFlyout="{StaticResource StatusFlyout}"
-                    PointerWheelChanged="OnRightZonePointerWheelChanged">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
 
                     <StackPanel
-                        Grid.Column="0"
                         Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        Spacing="8">
-                        <Button
-                            Width="28"
-                            Height="28"
-                            Padding="0"
-                            Background="#202836"
-                            BorderBrush="#303A4B"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Command="{Binding OpenStatusPanelCommand}">
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="10"
-                                Opacity="{Binding IsNetworkAvailable, Converter={StaticResource BoolToOpacityConverter}}"
-                                Text="NET" />
-                        </Button>
-
-                        <Button
-                            Width="28"
-                            Height="28"
-                            Padding="0"
-                            Background="#202836"
-                            BorderBrush="#303A4B"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Command="{Binding OpenStatusPanelCommand}">
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="10"
-                                Opacity="{Binding IsAudioAvailable, Converter={StaticResource BoolToOpacityConverter}}"
-                                Text="AUD" />
-                        </Button>
-
-                        <Button
-                            Width="28"
-                            Height="28"
-                            Padding="0"
-                            Background="#202836"
-                            BorderBrush="#303A4B"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Command="{Binding OpenStatusPanelCommand}">
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="10"
-                                Opacity="{Binding HasNotifications, Converter={StaticResource BoolToOpacityConverter}}"
-                                Text="ALR" />
-                        </Button>
-                    </StackPanel>
-
-                    <StackPanel
-                        Grid.Column="1"
-                        Margin="10,0,0,0"
-                        VerticalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="8">
+                        Spacing="5"
+                        VerticalAlignment="Center">
                         <TextBlock
-                            HorizontalAlignment="Right"
-                            Foreground="#F5F7FB"
-                            FontSize="13"
-                            FontWeight="SemiBold"
+                            Style="{StaticResource PrimaryTextStyle}"
                             Text="{Binding CurrentTime}" />
                         <TextBlock
-                            HorizontalAlignment="Right"
-                            Foreground="#A1AEC4"
-                            FontSize="10"
-                            FontWeight="SemiBold"
+                            Style="{StaticResource DateTextStyle}"
                             Text="{Binding CurrentDate}" />
                     </StackPanel>
-                </Grid>
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    Background="Transparent"
+                    ContextFlyout="{StaticResource StatusFlyout}"
+                    PointerWheelChanged="OnRightZonePointerWheelChanged">
+
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="5"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            Style="{StaticResource SmallTextStyle}"
+                            Text="☁" />
+                        <TextBlock
+                            Style="{StaticResource SmallTextStyle}"
+                            Text="26°C" />
+                    </StackPanel>
+
+                    <Button
+                        Command="{Binding OpenStatusPanelCommand}"
+                        Style="{StaticResource GhostIconButtonStyle}">
+                        <TextBlock
+                            Foreground="{StaticResource PrimaryTextBrush}"
+                            FontFamily="Segoe Fluent Icons"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="&#xE80F;" />
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

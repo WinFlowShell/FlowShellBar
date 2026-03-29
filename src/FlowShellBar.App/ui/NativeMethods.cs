@@ -30,6 +30,12 @@ internal static class NativeMethods
 
     public static readonly nint HwndTopmost = new(-1);
 
+    public delegate bool MonitorEnumProc(
+        nint hMonitor,
+        nint hdc,
+        nint lprcMonitor,
+        nint dwData);
+
     public enum DwmWindowCornerPreference
     {
         Default = 0,
@@ -58,6 +64,24 @@ internal static class NativeMethods
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct MONITORINFOEX
+    {
+        public MONITORINFO monitorInfo;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
     }
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
@@ -99,6 +123,20 @@ internal static class NativeMethods
     public static extern bool ClientToScreen(
         nint hWnd,
         ref POINT lpPoint);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool EnumDisplayMonitors(
+        nint hdc,
+        nint lprcClip,
+        MonitorEnumProc lpfnEnum,
+        nint dwData);
+
+    [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfo(
+        nint hMonitor,
+        ref MONITORINFOEX lpmi);
 
     [DllImport("dwmapi.dll", EntryPoint = "DwmSetWindowAttribute")]
     public static extern int DwmSetWindowAttributeInt(

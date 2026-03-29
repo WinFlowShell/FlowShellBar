@@ -8,8 +8,8 @@ namespace FlowShellBar.App.Ui.Converters;
 
 public sealed class WorkspaceOccupiedBorderConverter : IValueConverter
 {
-    private static readonly SolidColorBrush OccupiedBrush = new(Color.FromArgb(255, 56, 67, 84));
-    private static readonly SolidColorBrush EmptyBrush = new(Color.FromArgb(255, 35, 41, 52));
+    private static readonly SolidColorBrush OccupiedBrush = new(Color.FromArgb(255, 98, 86, 79));
+    private static readonly SolidColorBrush EmptyBrush = new(Color.FromArgb(0, 0, 0, 0));
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {

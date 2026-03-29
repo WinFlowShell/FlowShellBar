@@ -7,6 +7,11 @@ public abstract class BindableBase : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     protected bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(storage, value))
@@ -15,7 +20,7 @@ public abstract class BindableBase : INotifyPropertyChanged
         }
 
         storage = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        OnPropertyChanged(propertyName);
         return true;
     }
 }

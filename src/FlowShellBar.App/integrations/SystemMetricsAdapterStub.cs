@@ -12,4 +12,10 @@ public sealed class SystemMetricsAdapterStub : ISystemMetricsAdapter
     public bool IsNetworkAvailable => true;
 
     public bool IsAudioAvailable => true;
+
+    public int MemoryUsagePercent => 47;
+
+    public int CpuUsagePercent => 44;
+
+    public int TemperatureCelsius => 3;
 }
