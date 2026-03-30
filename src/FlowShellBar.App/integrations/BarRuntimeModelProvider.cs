@@ -183,6 +183,7 @@ public sealed class BarRuntimeModelProvider : IBarModelProvider, IBarModelMutato
         var connectionState = ComputeConnectionState(flowtileProjection, flowShellCoreProjection);
         var fallbackEnabled = flowtileProjection is null || flowShellCoreProjection is null;
         var activeWorkspaceId = flowtileProjection?.ActiveWorkspaceId ?? _fallbackActiveWorkspaceId;
+        var systemMetrics = _systemMetricsAdapter.ReadSnapshot();
         var hasNotifications = _tickCount % 12 >= 6;
         var surfacePlacement = flowtileProjection is null
             ? BarSurfacePlacementModel.Fallback
@@ -205,9 +206,14 @@ public sealed class BarRuntimeModelProvider : IBarModelProvider, IBarModelMutato
             ?? BuildFallbackWorkspaces(activeWorkspaceId);
         var activeWorkspaceLabel = GetActiveWorkspaceDisplayLabel(workspaces, activeWorkspaceId);
         var resourceMetrics = new ResourceMetricsModel(
-            MemoryUsagePercent: _systemMetricsAdapter.MemoryUsagePercent,
-            CpuUsagePercent: _systemMetricsAdapter.CpuUsagePercent,
-            TemperatureCelsius: _systemMetricsAdapter.TemperatureCelsius);
+            MemoryUsagePercent: systemMetrics.MemoryUsagePercent,
+            MemoryUsedBytes: systemMetrics.MemoryUsedBytes,
+            MemoryAvailableBytes: systemMetrics.MemoryAvailableBytes,
+            MemoryTotalBytes: systemMetrics.MemoryTotalBytes,
+            CpuUsagePercent: systemMetrics.CpuUsagePercent,
+            GpuUsagePercent: systemMetrics.GpuUsagePercent,
+            CpuTemperatureCelsius: systemMetrics.CpuTemperatureCelsius,
+            GpuTemperatureCelsius: systemMetrics.GpuTemperatureCelsius);
 
         return new BarModel(
             RuntimeMode: runtimeMode,
@@ -225,8 +231,8 @@ public sealed class BarRuntimeModelProvider : IBarModelProvider, IBarModelMutato
             CurrentTime: DateTime.Now.ToString("HH:mm:ss"),
             CurrentDate: DateTime.Now.ToString("ddd, dd MMM"),
             StatusCluster: new StatusClusterModel(
-                IsNetworkAvailable: _systemMetricsAdapter.IsNetworkAvailable,
-                IsAudioAvailable: _systemMetricsAdapter.IsAudioAvailable,
+                IsNetworkAvailable: systemMetrics.IsNetworkAvailable,
+                IsAudioAvailable: systemMetrics.IsAudioAvailable,
                 HasNotifications: hasNotifications));
     }
 

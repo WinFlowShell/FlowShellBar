@@ -1,6 +1,8 @@
-namespace FlowShellBar.App.Application.Models;
+namespace FlowShellBar.App.Integrations;
 
-public sealed record ResourceMetricsModel(
+public sealed record SystemMetricsSnapshot(
+    bool IsNetworkAvailable,
+    bool IsAudioAvailable,
     int MemoryUsagePercent,
     ulong MemoryUsedBytes,
     ulong MemoryAvailableBytes,

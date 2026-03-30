@@ -11,20 +11,27 @@
 
     <Grid
         x:Name="ShellRoot"
-        Background="#12100F">
+        Background="#141211">
 
         <Grid.Resources>
             <converters:WorkspaceActiveToBrushConverter x:Key="WorkspaceActiveToBrushConverter" />
             <converters:WorkspaceForegroundConverter x:Key="WorkspaceForegroundConverter" />
             <converters:WorkspaceOccupiedBorderConverter x:Key="WorkspaceOccupiedBorderConverter" />
             <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+            <converters:PercentageToArcGeometryConverter x:Key="PercentageToArcGeometryConverter" />
 
-            <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#12100F" />
-            <SolidColorBrush x:Key="ShellAccentBrush" Color="#1B1715" />
-            <SolidColorBrush x:Key="PrimaryTextBrush" Color="#EEE6E0" />
-            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#BEB3AB" />
-            <SolidColorBrush x:Key="MutedTextBrush" Color="#867B74" />
-            <SolidColorBrush x:Key="AlertBrush" Color="#DA4F52" />
+            <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#141211" />
+            <SolidColorBrush x:Key="ShellBorderBrush" Color="#302A26" />
+            <SolidColorBrush x:Key="Layer1Brush" Color="#1C1917" />
+            <SolidColorBrush x:Key="Layer2Brush" Color="#25211E" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#3B3430" />
+            <SolidColorBrush x:Key="ResourceTrackBrush" Color="#4A423D" />
+            <SolidColorBrush x:Key="PrimaryTextBrush" Color="#EEE8E3" />
+            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A99F97" />
+            <SolidColorBrush x:Key="MutedTextBrush" Color="#7E746D" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#8B524C" />
+            <SolidColorBrush x:Key="AccentStrokeBrush" Color="#5D403D" />
+            <SolidColorBrush x:Key="StatusPositiveBrush" Color="#D7CFC7" />
 
             <Style x:Key="MonoTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="JetBrains Mono" />
@@ -32,7 +39,7 @@
 
             <Style x:Key="SmallTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
                 <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontSize" Value="10" />
+                <Setter Property="FontSize" Value="9" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
@@ -53,8 +60,53 @@
 
             <Style x:Key="DateTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
                 <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontSize" Value="10" />
                 <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="BarGroupBorderStyle" TargetType="Border">
+                <Setter Property="Height" Value="32" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="InlinePillStyle" TargetType="Border">
+                <Setter Property="Height" Value="20" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="RightStatusCapsuleStyle" TargetType="Border">
+                <Setter Property="Height" Value="22" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="UtilityCircleStyle" TargetType="Border">
+                <Setter Property="Width" Value="18" />
+                <Setter Property="Height" Value="18" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SymbolGlyphStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe UI Symbol" />
+                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
@@ -74,12 +126,14 @@
 
         <Border
             Margin="0"
-            Padding="7,0"
+            Padding="0"
             Background="{StaticResource ShellSurfaceBrush}"
-            BorderThickness="0">
+            BorderBrush="{StaticResource ShellBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="10">
 
             <Grid
-                Height="37"
+                Height="40"
                 VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -89,6 +143,7 @@
 
                 <Grid
                     Grid.Column="0"
+                    Margin="0,0,18,0"
                     VerticalAlignment="Center"
                     Background="Transparent"
                     ContextFlyout="{StaticResource LeftZoneFlyout}"
@@ -99,104 +154,275 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Image
-                        Margin="0,0,6,0"
-                        Width="14"
-                        Height="14"
-                        VerticalAlignment="Center"
-                        IsHitTestVisible="False">
-                        <Image.Source>
-                            <imaging:SvgImageSource UriSource="ms-appx:///Assets/Icons/ShellEntryStar.svg" />
-                        </Image.Source>
-                    </Image>
+                    <Grid
+                        Width="30"
+                        Height="30"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center">
+                        <Image
+                            Width="19"
+                            Height="19"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            IsHitTestVisible="False">
+                            <Image.Source>
+                                <imaging:SvgImageSource UriSource="ms-appx:///Assets/Icons/ShellEntryStar.svg" />
+                            </Image.Source>
+                        </Image>
+                    </Grid>
 
-                    <StackPanel
+                    <Border
                         Grid.Column="1"
-                        MaxWidth="300"
-                        VerticalAlignment="Center"
-                        Spacing="-2">
-                        <TextBlock
-                            Style="{StaticResource MutedSmallTextStyle}"
-                            Text="{Binding ActiveWindowAppName}"
-                            TextTrimming="CharacterEllipsis" />
-                        <TextBlock
-                            Style="{StaticResource PrimaryTextStyle}"
-                            Text="{Binding ActiveWorkspaceLabel}"
-                            TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+                        Style="{StaticResource BarGroupBorderStyle}"
+                        MinWidth="220"
+                        MaxWidth="320"
+                        Padding="0">
+                        <StackPanel
+                            VerticalAlignment="Center"
+                            Spacing="-2">
+                            <TextBlock
+                                Style="{StaticResource MutedSmallTextStyle}"
+                                Text="{Binding ActiveWindowAppName}"
+                                TextTrimming="CharacterEllipsis" />
+                            <TextBlock
+                                Style="{StaticResource PrimaryTextStyle}"
+                                Text="{Binding ActiveWindowTitle}"
+                                TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
-                <StackPanel
+                <Grid
                     Grid.Column="1"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="12"
                     ContextFlyout="{StaticResource WorkspaceFlyout}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="360" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
 
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Spacing="7"
-                        VerticalAlignment="Center">
-                        <Border
-                            x:Name="ResourcesAnchor"
-                            Background="Transparent"
-                            CornerRadius="8"
-                            Padding="3,2"
-                            PointerEntered="OnResourcesAnchorPointerEntered"
-                            PointerExited="OnResourcesAnchorPointerExited"
-                            Tapped="OnResourcesAnchorTapped">
-                            <StackPanel
-                                Orientation="Horizontal"
-                                Spacing="7"
+                    <Border
+                        Grid.Column="0"
+                        Style="{StaticResource BarGroupBorderStyle}"
+                        HorizontalAlignment="Right"
+                        Padding="0">
+                        <Grid
+                            VerticalAlignment="Center"
+                            ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Grid
+                                x:Name="ResourcesAnchor"
+                                Grid.Column="0"
+                                Background="Transparent"
+                                PointerEntered="OnResourcesAnchorPointerEntered"
+                                PointerExited="OnResourcesAnchorPointerExited"
+                                Tapped="OnResourcesAnchorTapped">
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="10"
+                                    VerticalAlignment="Center">
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                        <Grid Width="16" Height="16">
+                                            <Ellipse
+                                                Width="16"
+                                                Height="16"
+                                                Stroke="{StaticResource ResourceTrackBrush}"
+                                                StrokeThickness="1.15" />
+                                            <Path
+                                                Data="{Binding MemoryUsagePercentValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=16}"
+                                                Stroke="{Binding MemoryIndicatorBrush}"
+                                                StrokeThickness="1.15"
+                                                StrokeStartLineCap="Round"
+                                                StrokeEndLineCap="Round" />
+                                            <Viewbox
+                                                Width="7"
+                                                Height="7"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Grid Width="10" Height="10">
+                                                    <Rectangle
+                                                        Width="7"
+                                                        Height="4.6"
+                                                        RadiusX="0.8"
+                                                        RadiusY="0.8"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Stroke="{Binding MemoryIndicatorBrush}"
+                                                        StrokeThickness="1" />
+                                                    <Rectangle
+                                                        Width="3.8"
+                                                        Height="0.8"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,-1.2,0,0"
+                                                        Fill="{Binding MemoryIndicatorBrush}" />
+                                                    <Rectangle
+                                                        Width="3.8"
+                                                        Height="0.8"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,1.2,0,0"
+                                                        Fill="{Binding MemoryIndicatorBrush}" />
+                                                </Grid>
+                                            </Viewbox>
+                                        </Grid>
+                                        <TextBlock
+                                            Style="{StaticResource SmallTextStyle}"
+                                            Foreground="{Binding MemoryIndicatorBrush}"
+                                            Text="{Binding MemoryUsageText}" />
+                                    </StackPanel>
+
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                        <Grid Width="16" Height="16">
+                                            <Ellipse
+                                                Width="16"
+                                                Height="16"
+                                                Stroke="{StaticResource ResourceTrackBrush}"
+                                                StrokeThickness="1.15" />
+                                            <Path
+                                                Data="{Binding TemperatureIndicatorValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=16}"
+                                                Stroke="{Binding TemperatureIndicatorBrush}"
+                                                StrokeThickness="1.15"
+                                                StrokeStartLineCap="Round"
+                                                StrokeEndLineCap="Round" />
+                                            <Viewbox
+                                                Width="7"
+                                                Height="7"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Grid Width="10" Height="10">
+                                                    <Rectangle
+                                                        Width="1.4"
+                                                        Height="4.7"
+                                                        RadiusX="0.7"
+                                                        RadiusY="0.7"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0,0.8,0,0"
+                                                        Fill="{Binding TemperatureIndicatorBrush}" />
+                                                    <Ellipse
+                                                        Width="3.6"
+                                                        Height="3.6"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Bottom"
+                                                        Fill="{Binding TemperatureIndicatorBrush}" />
+                                                </Grid>
+                                            </Viewbox>
+                                        </Grid>
+                                        <TextBlock
+                                            Style="{StaticResource SmallTextStyle}"
+                                            Foreground="{Binding TemperatureIndicatorBrush}"
+                                            Text="{Binding TemperatureText}" />
+                                    </StackPanel>
+
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                        <Grid Width="16" Height="16">
+                                            <Ellipse
+                                                Width="16"
+                                                Height="16"
+                                                Stroke="{StaticResource ResourceTrackBrush}"
+                                                StrokeThickness="1.15" />
+                                            <Path
+                                                Data="{Binding CpuUsagePercentValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=16}"
+                                                Stroke="{Binding CpuIndicatorBrush}"
+                                                StrokeThickness="1.15"
+                                                StrokeStartLineCap="Round"
+                                                StrokeEndLineCap="Round" />
+                                            <Viewbox
+                                                Width="7"
+                                                Height="7"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                                <Grid Width="10" Height="10">
+                                                    <Rectangle
+                                                        Width="1.4"
+                                                        Height="2.2"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="1.2,0,0,1"
+                                                        Fill="{Binding CpuIndicatorBrush}" />
+                                                    <Rectangle
+                                                        Width="1.4"
+                                                        Height="4.0"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="0,0,0,1"
+                                                        Fill="{Binding CpuIndicatorBrush}" />
+                                                    <Rectangle
+                                                        Width="1.4"
+                                                        Height="5.6"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="0,0,1.2,1"
+                                                        Fill="{Binding CpuIndicatorBrush}" />
+                                                </Grid>
+                                            </Viewbox>
+                                        </Grid>
+                                        <TextBlock
+                                            Style="{StaticResource SmallTextStyle}"
+                                            Foreground="{Binding CpuIndicatorBrush}"
+                                            Text="{Binding CpuUsageText}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <Rectangle
+                                Grid.Column="1"
+                                Width="0"
+                                Height="14"
+                                VerticalAlignment="Center"
+                                Fill="{StaticResource DividerBrush}" />
+
+                            <Grid
+                                Grid.Column="2"
+                                MinWidth="150"
+                                MaxWidth="198"
                                 VerticalAlignment="Center">
-                                <StackPanel
-                                    Orientation="Horizontal"
-                                    Spacing="3"
-                                    VerticalAlignment="Center">
-                                    <Ellipse
-                                        Width="6"
-                                        Height="6"
-                                        Fill="#C8CFDD"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        Style="{StaticResource SmallTextStyle}"
-                                        Text="{Binding MemoryUsageText}" />
-                                </StackPanel>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-                                <StackPanel
-                                    Orientation="Horizontal"
-                                    Spacing="3"
-                                    VerticalAlignment="Center">
-                                    <Ellipse
-                                        Width="6"
-                                        Height="6"
-                                        Fill="#D4D7E2"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        Style="{StaticResource SmallTextStyle}"
-                                        Text="{Binding CpuUsageText}" />
-                                </StackPanel>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontFamily="Segoe UI Symbol"
+                                    FontSize="12"
+                                    Foreground="{StaticResource PrimaryTextBrush}"
+                                    Text="♪" />
 
-                                <StackPanel
-                                    Orientation="Horizontal"
-                                    Spacing="3"
-                                    VerticalAlignment="Center">
-                                    <Ellipse
-                                        Width="6"
-                                        Height="6"
-                                        Fill="#B8BCC7"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        Style="{StaticResource SmallTextStyle}"
-                                        Text="{Binding TemperatureText}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource SmallTextStyle}"
+                                    Foreground="{StaticResource PrimaryTextBrush}"
+                                    Text="Here Without You • 3..."
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center" />
+                            </Grid>
+                        </Grid>
+                    </Border>
 
                     <Border
                         x:Name="WorkspaceAnchor"
+                        Grid.Column="1"
+                        Style="{StaticResource BarGroupBorderStyle}"
+                        Margin="4,0"
                         Background="Transparent"
                         Padding="0"
                         PointerEntered="OnWorkspaceAnchorPointerEntered"
@@ -207,35 +433,43 @@
                         <ItemsControl ItemsSource="{Binding Workspaces}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    <StackPanel Orientation="Horizontal" Spacing="2" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
 
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button
-                                        Width="14"
-                                        Height="14"
+                                        Width="24"
+                                        Height="24"
                                         Padding="0"
                                         Background="Transparent"
                                         BorderThickness="0"
-                                        CornerRadius="7"
                                         Command="{Binding DataContext.SwitchWorkspaceCommand, ElementName=ShellRoot}"
                                         CommandParameter="{Binding Id}">
                                         <Grid>
                                             <Ellipse
-                                                Width="14"
-                                                Height="14"
+                                                Width="22"
+                                                Height="22"
+                                                Fill="#302926"
+                                                Opacity="{Binding IsOccupied, Converter={StaticResource BoolToOpacityConverter}}" />
+                                            <Ellipse
+                                                Width="22"
+                                                Height="22"
                                                 Fill="{Binding IsActive, Converter={StaticResource WorkspaceActiveToBrushConverter}}" />
                                             <Ellipse
-                                                Width="8"
-                                                Height="8"
+                                                Width="18"
+                                                Height="18"
                                                 Stroke="{Binding IsOccupied, Converter={StaticResource WorkspaceOccupiedBorderConverter}}"
                                                 StrokeThickness="1.1" />
-                                            <Ellipse
-                                                Width="2.5"
-                                                Height="2.5"
-                                                Fill="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}" />
+                                            <TextBlock
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontFamily="JetBrains Mono"
+                                                FontSize="9"
+                                                FontWeight="SemiBold"
+                                                Foreground="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}"
+                                                Text="{Binding Id}" />
                                         </Grid>
                                     </Button>
                                 </DataTemplate>
@@ -244,58 +478,204 @@
                     </Border>
 
                     <Border
-                        x:Name="ClockAnchor"
-                        Background="Transparent"
-                        CornerRadius="8"
-                        Padding="3,2"
-                        PointerEntered="OnClockAnchorPointerEntered"
-                        PointerExited="OnClockAnchorPointerExited"
-                        Tapped="OnClockAnchorTapped">
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="5"
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                Style="{StaticResource PrimaryTextStyle}"
-                                Text="{Binding CurrentTime}" />
-                            <TextBlock
-                                Style="{StaticResource DateTextStyle}"
-                                Text="{Binding CurrentDate}" />
-                        </StackPanel>
+                        Grid.Column="2"
+                        Style="{StaticResource BarGroupBorderStyle}"
+                        HorizontalAlignment="Left"
+                        Padding="0">
+                        <Grid
+                            VerticalAlignment="Center"
+                            ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border
+                                x:Name="ClockAnchor"
+                                Grid.Column="0"
+                                Background="Transparent"
+                                PointerEntered="OnClockAnchorPointerEntered"
+                                PointerExited="OnClockAnchorPointerExited"
+                                Tapped="OnClockAnchorTapped">
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="4"
+                                    VerticalAlignment="Center">
+                                    <TextBlock
+                                        Style="{StaticResource PrimaryTextStyle}"
+                                        FontSize="12"
+                                        Text="{Binding CurrentTime}" />
+                                    <TextBlock
+                                        Style="{StaticResource DateTextStyle}"
+                                        Text="•" />
+                                    <TextBlock
+                                        Style="{StaticResource DateTextStyle}"
+                                        Text="{Binding CurrentDate}" />
+                                </StackPanel>
+                            </Border>
+
+                            <StackPanel
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="4"
+                                VerticalAlignment="Center">
+                                <Border Style="{StaticResource UtilityCircleStyle}">
+                                    <TextBlock
+                                        Style="{StaticResource SymbolGlyphStyle}"
+                                        Text="◫" />
+                                </Border>
+                                <Border Style="{StaticResource UtilityCircleStyle}">
+                                    <TextBlock
+                                        Style="{StaticResource SymbolGlyphStyle}"
+                                        Text="✎" />
+                                </Border>
+                                <Border Style="{StaticResource UtilityCircleStyle}">
+                                    <TextBlock
+                                        Style="{StaticResource SymbolGlyphStyle}"
+                                        Text="⌨" />
+                                </Border>
+                                <Border Style="{StaticResource UtilityCircleStyle}">
+                                    <TextBlock
+                                        Style="{StaticResource SymbolGlyphStyle}"
+                                        Text="◐" />
+                                </Border>
+                            </StackPanel>
+
+                            <Border
+                                Grid.Column="2"
+                                Style="{StaticResource InlinePillStyle}"
+                                Padding="0">
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+                                    <Grid
+                                        Width="14"
+                                        Height="8"
+                                        VerticalAlignment="Center">
+                                        <Border
+                                            Width="12"
+                                            Height="8"
+                                            HorizontalAlignment="Left"
+                                            BorderBrush="{StaticResource SecondaryTextBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="2" />
+                                        <Rectangle
+                                            Width="2"
+                                            Height="4"
+                                            Margin="0,0,-2,0"
+                                            HorizontalAlignment="Right"
+                                            Fill="{StaticResource SecondaryTextBrush}" />
+                                        <Rectangle
+                                            Width="7"
+                                            Height="4"
+                                            HorizontalAlignment="Left"
+                                            Margin="2,0,0,0"
+                                            Fill="{StaticResource StatusPositiveBrush}" />
+                                    </Grid>
+                                    <TextBlock
+                                        Style="{StaticResource SmallTextStyle}"
+                                        Foreground="{StaticResource PrimaryTextBrush}"
+                                        Text="87" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </Border>
-                </StackPanel>
+                </Grid>
 
                 <StackPanel
                     Grid.Column="2"
                     x:Name="RightZone"
+                    Margin="18,0,0,0"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
-                    Spacing="12"
+                    Spacing="8"
                     Background="Transparent"
                     ContextFlyout="{StaticResource StatusFlyout}"
                     Tapped="OnRightZoneTapped"
                     PointerWheelChanged="OnRightZonePointerWheelChanged">
 
+                    <Border
+                        Style="{StaticResource BarGroupBorderStyle}"
+                        Padding="0">
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="5"
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Foreground="{StaticResource PrimaryTextBrush}"
+                                Text="☁" />
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Foreground="{StaticResource PrimaryTextBrush}"
+                                Text="26°C" />
+                        </StackPanel>
+                    </Border>
+
                     <StackPanel
                         Orientation="Horizontal"
-                        Spacing="5"
+                        Spacing="6"
                         VerticalAlignment="Center">
+                        <Ellipse
+                            Width="5"
+                            Height="5"
+                            Fill="#BFB4AB" />
+                        <Rectangle
+                            Width="5"
+                            Height="5"
+                            RadiusX="1"
+                            RadiusY="1"
+                            Fill="#8F837B" />
+                        <Ellipse
+                            Width="5"
+                            Height="5"
+                            Stroke="#9B8F87"
+                            StrokeThickness="1" />
                         <TextBlock
-                            Style="{StaticResource SmallTextStyle}"
-                            Text="☁" />
-                        <TextBlock
-                            Style="{StaticResource SmallTextStyle}"
-                            Text="26°C" />
+                            Style="{StaticResource MutedSmallTextStyle}"
+                            FontSize="10"
+                            Text="⌄" />
                     </StackPanel>
 
-                    <TextBlock
-                        Foreground="{StaticResource PrimaryTextBrush}"
-                        FontFamily="Segoe Fluent Icons"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        Text="&#xE80F;" />
+                    <Border
+                        Style="{StaticResource RightStatusCapsuleStyle}"
+                        Padding="0">
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                Style="{StaticResource SmallTextStyle}"
+                                Foreground="{StaticResource PrimaryTextBrush}"
+                                Text="EN" />
+                            <Ellipse
+                                Width="5"
+                                Height="5"
+                                Fill="#CEC3BA"
+                                Opacity="{Binding IsAudioAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
+                            <Ellipse
+                                Width="5"
+                                Height="5"
+                                Fill="#CEC3BA"
+                                Opacity="{Binding HasNotifications, Converter={StaticResource BoolToOpacityConverter}}" />
+                            <Rectangle
+                                Width="6"
+                                Height="6"
+                                RadiusX="1"
+                                RadiusY="1"
+                                Fill="#CEC3BA"
+                                Opacity="{Binding IsNetworkAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
+                            <Ellipse
+                                Width="6"
+                                Height="6"
+                                Stroke="#CEC3BA"
+                                StrokeThickness="1"
+                                Opacity="0.75" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Grid>
         </Border>

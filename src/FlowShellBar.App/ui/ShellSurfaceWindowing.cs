@@ -25,8 +25,8 @@ internal static class ShellSurfaceWindowing
 
     public static int GetBarHeight()
     {
-        var configuredHeight = GetEnvironmentInt("FLOWSHELL_BAR_HEIGHT_PX", 37);
-        return configuredHeight is 40 or 41 or 46 or 60 ? 37 : configuredHeight;
+        var configuredHeight = GetEnvironmentInt("FLOWSHELL_BAR_HEIGHT_PX", 40);
+        return configuredHeight is 37 or 41 or 46 or 60 ? 40 : configuredHeight;
     }
 
     public static AppWindow GetAppWindow(Window window)

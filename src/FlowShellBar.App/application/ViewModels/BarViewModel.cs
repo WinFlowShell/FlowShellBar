@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 
 using FlowShellBar.App.Application;
@@ -21,9 +22,19 @@ public sealed class BarViewModel : BindableBase
     private string _activeWindowAppName = string.Empty;
     private string _activeWindowTitle = string.Empty;
     private string _activeWorkspaceLabel = string.Empty;
+    private int _memoryUsagePercentValue;
+    private int _cpuUsagePercentValue;
+    private int _temperatureIndicatorValue;
     private string _memoryUsageText = string.Empty;
     private string _cpuUsageText = string.Empty;
     private string _temperatureText = string.Empty;
+    private string _ramUsedPopupText = string.Empty;
+    private string _ramFreePopupText = string.Empty;
+    private string _ramTotalPopupText = string.Empty;
+    private string _cpuTemperaturePopupText = string.Empty;
+    private string _gpuTemperaturePopupText = string.Empty;
+    private string _cpuLoadPopupText = string.Empty;
+    private string _gpuLoadPopupText = string.Empty;
     private string _currentTime = string.Empty;
     private string _currentDate = string.Empty;
     private string _runtimeModeLabel = string.Empty;
@@ -35,6 +46,9 @@ public sealed class BarViewModel : BindableBase
     private BarPanelSurfaceKind _activePanelSurface;
     private BarPopupSurfaceKind _activePopupSurface;
     private bool _isPopupPinned;
+    private Brush _memoryIndicatorBrush = CreateBrush("#D7CFC7");
+    private Brush _temperatureIndicatorBrush = CreateBrush("#D7CFC7");
+    private Brush _cpuIndicatorBrush = CreateBrush("#D7CFC7");
     private Brush _connectionStateBackground = CreateBrush("#202836");
     private Brush _connectionStateBorderBrush = CreateBrush("#303A4B");
     private Brush _connectionStateForeground = CreateBrush("#A1AEC4");
@@ -94,6 +108,24 @@ public sealed class BarViewModel : BindableBase
         private set => SetProperty(ref _activeWorkspaceLabel, value);
     }
 
+    public int MemoryUsagePercentValue
+    {
+        get => _memoryUsagePercentValue;
+        private set => SetProperty(ref _memoryUsagePercentValue, value);
+    }
+
+    public int CpuUsagePercentValue
+    {
+        get => _cpuUsagePercentValue;
+        private set => SetProperty(ref _cpuUsagePercentValue, value);
+    }
+
+    public int TemperatureIndicatorValue
+    {
+        get => _temperatureIndicatorValue;
+        private set => SetProperty(ref _temperatureIndicatorValue, value);
+    }
+
     public string MemoryUsageText
     {
         get => _memoryUsageText;
@@ -110,6 +142,66 @@ public sealed class BarViewModel : BindableBase
     {
         get => _temperatureText;
         private set => SetProperty(ref _temperatureText, value);
+    }
+
+    public string RamUsedPopupText
+    {
+        get => _ramUsedPopupText;
+        private set => SetProperty(ref _ramUsedPopupText, value);
+    }
+
+    public string RamFreePopupText
+    {
+        get => _ramFreePopupText;
+        private set => SetProperty(ref _ramFreePopupText, value);
+    }
+
+    public string RamTotalPopupText
+    {
+        get => _ramTotalPopupText;
+        private set => SetProperty(ref _ramTotalPopupText, value);
+    }
+
+    public string CpuTemperaturePopupText
+    {
+        get => _cpuTemperaturePopupText;
+        private set => SetProperty(ref _cpuTemperaturePopupText, value);
+    }
+
+    public string GpuTemperaturePopupText
+    {
+        get => _gpuTemperaturePopupText;
+        private set => SetProperty(ref _gpuTemperaturePopupText, value);
+    }
+
+    public string CpuLoadPopupText
+    {
+        get => _cpuLoadPopupText;
+        private set => SetProperty(ref _cpuLoadPopupText, value);
+    }
+
+    public string GpuLoadPopupText
+    {
+        get => _gpuLoadPopupText;
+        private set => SetProperty(ref _gpuLoadPopupText, value);
+    }
+
+    public Brush MemoryIndicatorBrush
+    {
+        get => _memoryIndicatorBrush;
+        private set => SetProperty(ref _memoryIndicatorBrush, value);
+    }
+
+    public Brush TemperatureIndicatorBrush
+    {
+        get => _temperatureIndicatorBrush;
+        private set => SetProperty(ref _temperatureIndicatorBrush, value);
+    }
+
+    public Brush CpuIndicatorBrush
+    {
+        get => _cpuIndicatorBrush;
+        private set => SetProperty(ref _cpuIndicatorBrush, value);
     }
 
     public string CurrentTime
@@ -340,9 +432,25 @@ public sealed class BarViewModel : BindableBase
         ActiveWindowAppName = model.ActiveWindowAppName;
         ActiveWindowTitle = model.ActiveWindowTitle;
         ActiveWorkspaceLabel = model.ActiveWorkspaceLabel;
-        MemoryUsageText = model.ResourceMetrics.MemoryUsagePercent.ToString();
-        CpuUsageText = model.ResourceMetrics.CpuUsagePercent.ToString();
-        TemperatureText = model.ResourceMetrics.TemperatureCelsius.ToString();
+        MemoryUsagePercentValue = Math.Clamp(model.ResourceMetrics.MemoryUsagePercent, 0, 100);
+        CpuUsagePercentValue = Math.Clamp(model.ResourceMetrics.CpuUsagePercent, 0, 100);
+        TemperatureIndicatorValue = BuildTemperatureIndicatorValue(model.ResourceMetrics);
+        MemoryUsageText = model.ResourceMetrics.MemoryUsagePercent.ToString(CultureInfo.InvariantCulture);
+        CpuUsageText = model.ResourceMetrics.CpuUsagePercent.ToString(CultureInfo.InvariantCulture);
+        TemperatureText = BuildTemperatureIndicatorText(model.ResourceMetrics);
+        MemoryIndicatorBrush = BuildIndicatorBrush(MemoryUsagePercentValue, cautionThreshold: null, warningThreshold: 90);
+        TemperatureIndicatorBrush = BuildIndicatorBrush(
+            GetMaxAvailableTemperature(model.ResourceMetrics),
+            cautionThreshold: 65,
+            warningThreshold: 80);
+        CpuIndicatorBrush = BuildIndicatorBrush(CpuUsagePercentValue, cautionThreshold: null, warningThreshold: 90);
+        RamUsedPopupText = FormatGigabytes(model.ResourceMetrics.MemoryUsedBytes);
+        RamFreePopupText = FormatGigabytes(model.ResourceMetrics.MemoryAvailableBytes);
+        RamTotalPopupText = FormatGigabytes(model.ResourceMetrics.MemoryTotalBytes);
+        CpuTemperaturePopupText = FormatTemperature(model.ResourceMetrics.CpuTemperatureCelsius);
+        GpuTemperaturePopupText = FormatTemperature(model.ResourceMetrics.GpuTemperatureCelsius);
+        CpuLoadPopupText = BuildLoadLevelText(model.ResourceMetrics.CpuUsagePercent);
+        GpuLoadPopupText = BuildLoadLevelText(model.ResourceMetrics.GpuUsagePercent);
         CurrentTime = model.CurrentTime;
         CurrentDate = model.CurrentDate;
         SurfacePlacement = model.SurfacePlacement;
@@ -443,5 +551,84 @@ public sealed class BarViewModel : BindableBase
             r: Convert.ToByte(hex.Substring(2, 2), 16),
             g: Convert.ToByte(hex.Substring(4, 2), 16),
             b: Convert.ToByte(hex.Substring(6, 2), 16)));
+    }
+
+    private static string BuildTemperatureIndicatorText(ResourceMetricsModel resourceMetrics)
+    {
+        var maxTemperature = GetMaxAvailableTemperature(resourceMetrics);
+        return maxTemperature?.ToString(CultureInfo.InvariantCulture) ?? "--";
+    }
+
+    private static int BuildTemperatureIndicatorValue(ResourceMetricsModel resourceMetrics)
+    {
+        return GetMaxAvailableTemperature(resourceMetrics) is int maxTemperature
+            ? Math.Clamp(maxTemperature, 0, 100)
+            : 0;
+    }
+
+    private static int? GetMaxAvailableTemperature(ResourceMetricsModel resourceMetrics)
+    {
+        return (resourceMetrics.CpuTemperatureCelsius, resourceMetrics.GpuTemperatureCelsius) switch
+        {
+            (int cpuTemperature, int gpuTemperature) => Math.Max(cpuTemperature, gpuTemperature),
+            (int cpuTemperature, null) => cpuTemperature,
+            (null, int gpuTemperature) => gpuTemperature,
+            _ => null,
+        };
+    }
+
+    private static string FormatGigabytes(ulong bytes)
+    {
+        if (bytes == 0)
+        {
+            return "n/a";
+        }
+
+        var gigabytes = bytes / 1024d / 1024d / 1024d;
+        return string.Create(CultureInfo.InvariantCulture, $"{gigabytes:0.0} GB");
+    }
+
+    private static string FormatTemperature(int? temperatureCelsius)
+    {
+        return temperatureCelsius is int value
+            ? string.Create(CultureInfo.InvariantCulture, $"{value}°C")
+            : "n/a";
+    }
+
+    private static string BuildLoadLevelText(int? usagePercent)
+    {
+        if (usagePercent is not int value)
+        {
+            return "n/a";
+        }
+
+        var level = value switch
+        {
+            >= 80 => "High",
+            >= 40 => "Medium",
+            _ => "Low",
+        };
+
+        return string.Create(CultureInfo.InvariantCulture, $"{level} ({value}%)");
+    }
+
+    private static Brush BuildIndicatorBrush(int? value, int? cautionThreshold, int warningThreshold)
+    {
+        if (value is not int metricValue)
+        {
+            return CreateBrush("#A99F97");
+        }
+
+        if (metricValue >= warningThreshold)
+        {
+            return CreateBrush("#B97862");
+        }
+
+        if (cautionThreshold is int cautionValue && metricValue >= cautionValue)
+        {
+            return CreateBrush("#C59A57");
+        }
+
+        return CreateBrush("#D7CFC7");
     }
 }

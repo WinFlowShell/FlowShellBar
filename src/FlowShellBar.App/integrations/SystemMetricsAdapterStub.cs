@@ -9,13 +9,18 @@ public sealed class SystemMetricsAdapterStub : ISystemMetricsAdapter
         logger.Info("SystemMetrics adapter stub initialized.");
     }
 
-    public bool IsNetworkAvailable => true;
-
-    public bool IsAudioAvailable => true;
-
-    public int MemoryUsagePercent => 47;
-
-    public int CpuUsagePercent => 44;
-
-    public int TemperatureCelsius => 3;
+    public SystemMetricsSnapshot ReadSnapshot()
+    {
+        return new SystemMetricsSnapshot(
+            IsNetworkAvailable: true,
+            IsAudioAvailable: true,
+            MemoryUsagePercent: 47,
+            MemoryUsedBytes: 9UL * 1024 * 1024 * 1024,
+            MemoryAvailableBytes: 10UL * 1024 * 1024 * 1024,
+            MemoryTotalBytes: 19UL * 1024 * 1024 * 1024,
+            CpuUsagePercent: 44,
+            GpuUsagePercent: 12,
+            CpuTemperatureCelsius: 58,
+            GpuTemperatureCelsius: 51);
+    }
 }

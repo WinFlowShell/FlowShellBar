@@ -19,7 +19,7 @@ public sealed class AppBootstrapper : IAsyncDisposable
 
         var flowShellCoreAdapter = new FlowShellCoreIpcAdapter(Logger);
         var flowtileWmAdapter = new FlowtileWmIpcAdapter(Logger);
-        var systemMetricsAdapter = new SystemMetricsAdapterStub(Logger);
+        var systemMetricsAdapter = new WindowsSystemMetricsAdapter(Logger);
 
         await flowShellCoreAdapter.TryConnectAsync();
         await flowtileWmAdapter.TryConnectAsync();
