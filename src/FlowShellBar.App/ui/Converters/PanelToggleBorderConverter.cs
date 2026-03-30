@@ -6,10 +6,10 @@ using Windows.UI;
 
 namespace FlowShellBar.App.Ui.Converters;
 
-public sealed class WorkspaceForegroundConverter : IValueConverter
+public sealed class PanelToggleBorderConverter : IValueConverter
 {
-    private static readonly SolidColorBrush ActiveBrush = new(Color.FromArgb(255, 50, 47, 52));
-    private static readonly SolidColorBrush InactiveBrush = new(Color.FromArgb(255, 148, 143, 148));
+    private static readonly SolidColorBrush ActiveBrush = new(Color.FromArgb(255, 111, 106, 112));
+    private static readonly SolidColorBrush InactiveBrush = new(Color.FromArgb(255, 52, 49, 54));
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {

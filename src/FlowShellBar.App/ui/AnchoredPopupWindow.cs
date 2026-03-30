@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.ComponentModel;
 
 using FlowShellBar.App.Application;
@@ -124,7 +125,7 @@ public sealed class AnchoredPopupWindow : Window
     {
         var root = new Grid
         {
-            Background = CreateBrush("#12100F"),
+            Background = CreateBrush("#0F0E0E"),
         };
 
         root.PointerEntered += OnRootPointerEntered;
@@ -139,11 +140,13 @@ public sealed class AnchoredPopupWindow : Window
 
         var border = new Border
         {
-            Background = CreateBrush("#171412"),
-            BorderBrush = CreateBrush("#2B2521"),
+            Background = CreateBrush("#151416"),
+            BorderBrush = CreateBrush("#302D31"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(16),
-            Padding = new Thickness(16, 14, 16, 14),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12, 12, 12, 12),
+            Shadow = new ThemeShadow(),
+            Translation = new Vector3(0, 0, 22),
             Child = BuildPopupContent(),
         };
 
@@ -165,36 +168,36 @@ public sealed class AnchoredPopupWindow : Window
     {
         var stack = new StackPanel
         {
-            Spacing = 12,
+            Spacing = 10,
         };
 
-        stack.Children.Add(CreateTextBlock("RESOURCES", "#857A73", 10, FontWeights.SemiBold, 120));
+        stack.Children.Add(CreateTextBlock("RESOURCES", "#948F94", 10, FontWeights.SemiBold, 120));
         var grid = new Grid
         {
-            ColumnSpacing = 18,
+            ColumnSpacing = 10,
         };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        var ramColumn = CreateResourcesColumn(
+        var ramColumn = CreatePopupPanel(CreateResourcesColumn(
             "RAM",
             ("Used:", nameof(BarViewModel.RamUsedPopupText)),
             ("Free:", nameof(BarViewModel.RamFreePopupText)),
-            ("Total:", nameof(BarViewModel.RamTotalPopupText)));
+            ("Total:", nameof(BarViewModel.RamTotalPopupText))));
         grid.Children.Add(ramColumn);
 
-        var temperatureColumn = CreateResourcesColumn(
+        var temperatureColumn = CreatePopupPanel(CreateResourcesColumn(
             "Temperature",
             ("CPU:", nameof(BarViewModel.CpuTemperaturePopupText)),
-            ("GPU:", nameof(BarViewModel.GpuTemperaturePopupText)));
+            ("GPU:", nameof(BarViewModel.GpuTemperaturePopupText))));
         Grid.SetColumn(temperatureColumn, 1);
         grid.Children.Add(temperatureColumn);
 
-        var cpuColumn = CreateResourcesColumn(
+        var cpuColumn = CreatePopupPanel(CreateResourcesColumn(
             "CPU",
             ("Load:", nameof(BarViewModel.CpuLoadPopupText)),
-            ("GPU:", nameof(BarViewModel.GpuLoadPopupText)));
+            ("GPU:", nameof(BarViewModel.GpuLoadPopupText))));
         Grid.SetColumn(cpuColumn, 2);
         grid.Children.Add(cpuColumn);
 
@@ -207,46 +210,34 @@ public sealed class AnchoredPopupWindow : Window
     {
         var stack = new StackPanel
         {
-            Spacing = 12,
+            Spacing = 10,
         };
 
-        stack.Children.Add(CreateTextBlock("CLOCK", "#857A73", 10, FontWeights.SemiBold, 120));
+        stack.Children.Add(CreateTextBlock("CLOCK", "#948F94", 10, FontWeights.SemiBold, 120));
 
-        stack.Children.Add(new Border
+        stack.Children.Add(CreatePopupPanel(new StackPanel
         {
-            Background = CreateBrush("#1F1A17"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(14, 12, 14, 12),
-            Child = new StackPanel
+            Spacing = 4,
+            Children =
             {
-                Spacing = 4,
-                Children =
-                {
-                    CreateBoundTextBlock(nameof(BarViewModel.CurrentTime), "#F0E8E2", 24, FontWeights.SemiBold),
-                    CreateBoundTextBlock(nameof(BarViewModel.CurrentDate), "#F0E8E2", 12, FontWeights.SemiBold),
-                },
+                CreateBoundTextBlock(nameof(BarViewModel.CurrentTime), "#E7E1E7", 24, FontWeights.SemiBold),
+                CreateBoundTextBlock(nameof(BarViewModel.CurrentDate), "#E7E1E7", 12, FontWeights.SemiBold),
             },
-        });
+        }));
 
-        stack.Children.Add(new Border
+        stack.Children.Add(CreatePopupPanel(new StackPanel
         {
-            Background = CreateBrush("#1F1A17"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(12, 10, 12, 10),
-            Child = new StackPanel
+            Spacing = 3,
+            Children =
             {
-                Spacing = 3,
-                Children =
-                {
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWorkspaceLabel), "#F0E8E2", 12, FontWeights.SemiBold),
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWindowAppName), "#BAAEA6", 10, FontWeights.SemiBold),
-                },
+                CreateBoundTextBlock(nameof(BarViewModel.ActiveWorkspaceLabel), "#E7E1E7", 12, FontWeights.SemiBold),
+                CreateBoundTextBlock(nameof(BarViewModel.ActiveWindowAppName), "#CBC5CA", 10, FontWeights.SemiBold),
             },
-        });
+        }));
 
         stack.Children.Add(CreateTextBlock(
             "click keeps this popup anchored until a different transient surface opens",
-            "#BAAEA6",
+            "#CBC5CA",
             10,
             FontWeights.SemiBold));
 
@@ -257,28 +248,22 @@ public sealed class AnchoredPopupWindow : Window
     {
         var stack = new StackPanel
         {
-            Spacing = 12,
+            Spacing = 10,
         };
 
-        stack.Children.Add(CreateTextBlock("WORKSPACES", "#857A73", 10, FontWeights.SemiBold, 120));
+        stack.Children.Add(CreateTextBlock("WORKSPACES", "#948F94", 10, FontWeights.SemiBold, 120));
 
-        stack.Children.Add(new Border
+        stack.Children.Add(CreatePopupPanel(new StackPanel
         {
-            Background = CreateBrush("#1F1A17"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(14, 12, 14, 12),
-            Child = new StackPanel
+            Spacing = 4,
+            Children =
             {
-                Spacing = 4,
-                Children =
-                {
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWorkspaceLabel), "#F0E8E2", 13, FontWeights.SemiBold),
-                    CreateSummaryRow("active id", nameof(BarViewModel.ActiveWorkspaceIdText)),
-                    CreateSummaryRow("visible strip", nameof(BarViewModel.VisibleWorkspaceCount)),
-                    CreateSummaryRow("occupied", nameof(BarViewModel.OccupiedWorkspaceCount)),
-                },
+                CreateBoundTextBlock(nameof(BarViewModel.ActiveWorkspaceLabel), "#E7E1E7", 13, FontWeights.SemiBold),
+                CreateSummaryRow("active id", nameof(BarViewModel.ActiveWorkspaceIdText)),
+                CreateSummaryRow("visible strip", nameof(BarViewModel.VisibleWorkspaceCount)),
+                CreateSummaryRow("occupied", nameof(BarViewModel.OccupiedWorkspaceCount)),
             },
-        });
+        }));
 
         stack.Children.Add(CreateInfoRow("left click", "switch workspace through FlowtileWM"));
         stack.Children.Add(CreateInfoRow("right click", "open overview intent"));
@@ -293,17 +278,17 @@ public sealed class AnchoredPopupWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        var titleBlock = CreateTextBlock(title, "#F0E8E2", 11, FontWeights.SemiBold);
+        var titleBlock = CreateTextBlock(title, "#E7E1E7", 11, FontWeights.SemiBold);
         grid.Children.Add(titleBlock);
 
-        var bodyBlock = CreateTextBlock(body, "#BAAEA6", 10, FontWeights.SemiBold);
+        var bodyBlock = CreateTextBlock(body, "#CBC5CA", 10, FontWeights.SemiBold);
         bodyBlock.Margin = new Thickness(14, 0, 0, 0);
         Grid.SetColumn(bodyBlock, 1);
         grid.Children.Add(bodyBlock);
 
         return new Border
         {
-            Background = CreateBrush("#1F1A17"),
+            Background = CreateBrush("#1D1C1F"),
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(12, 10, 12, 10),
             Child = grid,
@@ -316,14 +301,25 @@ public sealed class AnchoredPopupWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        grid.Children.Add(CreateTextBlock(title, "#BAAEA6", 10, FontWeights.SemiBold));
+        grid.Children.Add(CreateTextBlock(title, "#CBC5CA", 10, FontWeights.SemiBold));
 
-        var valueBlock = CreateBoundTextBlock(bindingPath, "#F0E8E2", 11, FontWeights.SemiBold);
+        var valueBlock = CreateBoundTextBlock(bindingPath, "#E7E1E7", 11, FontWeights.SemiBold);
         Grid.SetColumn(valueBlock, 1);
         valueBlock.HorizontalAlignment = HorizontalAlignment.Right;
         grid.Children.Add(valueBlock);
 
         return grid;
+    }
+
+    private static Border CreatePopupPanel(UIElement child)
+    {
+        return new Border
+        {
+            Background = CreateBrush("#1D1C1F"),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(12, 10, 12, 10),
+            Child = child,
+        };
     }
 
     private FrameworkElement CreateResourcesColumn(string title, params (string Label, string BindingPath)[] rows)
@@ -344,10 +340,10 @@ public sealed class AnchoredPopupWindow : Window
                 {
                     Width = 7,
                     Height = 7,
-                    Fill = CreateBrush("#D9DFEC"),
+                    Fill = CreateBrush("#CBC4CB"),
                     VerticalAlignment = VerticalAlignment.Center,
                 },
-                CreateTextBlock(title, "#BAAEA6", 11, FontWeights.SemiBold),
+                CreateTextBlock(title, "#CBC5CA", 11, FontWeights.SemiBold),
             },
         });
 
@@ -371,9 +367,9 @@ public sealed class AnchoredPopupWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        grid.Children.Add(CreateTextBlock(label, "#BAAEA6", 10, FontWeights.SemiBold));
+        grid.Children.Add(CreateTextBlock(label, "#CBC5CA", 10, FontWeights.SemiBold));
 
-        var valueBlock = CreateBoundTextBlock(bindingPath, "#F0E8E2", 10, FontWeights.SemiBold);
+        var valueBlock = CreateBoundTextBlock(bindingPath, "#E7E1E7", 10, FontWeights.SemiBold);
         valueBlock.Margin = new Thickness(12, 0, 0, 0);
         valueBlock.HorizontalAlignment = HorizontalAlignment.Right;
         Grid.SetColumn(valueBlock, 1);
@@ -401,9 +397,9 @@ public sealed class AnchoredPopupWindow : Window
 
         var (width, height) = _popupKind switch
         {
-            BarPopupSurfaceKind.Resources => (438, 142),
-            BarPopupSurfaceKind.Workspaces => (286, 194),
-            _ => (264, 184),
+            BarPopupSurfaceKind.Resources => (468, 168),
+            BarPopupSurfaceKind.Workspaces => (304, 188),
+            _ => (276, 188),
         };
 
         var horizontalInset = 10;
