@@ -3,6 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:FlowShellBar.App.Ui.Controls"
     xmlns:converters="using:FlowShellBar.App.Ui.Converters"
     xmlns:imaging="using:Microsoft.UI.Xaml.Media.Imaging"
     mc:Ignorable="d"
@@ -15,78 +16,6 @@
             <converters:PercentageToArcGeometryConverter x:Key="PercentageToArcGeometryConverter" />
             <converters:PanelToggleBackgroundConverter x:Key="PanelToggleBackgroundConverter" />
             <converters:PanelToggleBorderConverter x:Key="PanelToggleBorderConverter" />
-
-            <SolidColorBrush x:Key="ShellSurfaceBrush" Color="#111011" />
-            <SolidColorBrush x:Key="ShellBorderBrush" Color="#302D31" />
-            <SolidColorBrush x:Key="ShellGroupBrush" Color="#1B1A1C" />
-            <SolidColorBrush x:Key="ShellGroupAccentBrush" Color="#222124" />
-            <SolidColorBrush x:Key="ShellGroupBorderBrush" Color="#343136" />
-            <SolidColorBrush x:Key="ShellTrackBrush" Color="#4A464B" />
-            <SolidColorBrush x:Key="PrimaryTextBrush" Color="#E7E1E7" />
-            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#CBC5CA" />
-            <SolidColorBrush x:Key="MutedTextBrush" Color="#948F94" />
-            <SolidColorBrush x:Key="WorkspaceOccupiedBrush" Color="#4D4B4D" />
-            <SolidColorBrush x:Key="PrimaryFillBrush" Color="#CBC4CB" />
-            <SolidColorBrush x:Key="OnPrimaryBrush" Color="#322F34" />
-            <SolidColorBrush x:Key="UtilityButtonBrush" Color="#242225" />
-            <SolidColorBrush x:Key="UtilityButtonBorderBrush" Color="#353238" />
-            <SolidColorBrush x:Key="BatteryFillBrush" Color="#E6E1E1" />
-            <SolidColorBrush x:Key="BatteryTrackBrush" Color="#948F94" />
-            <SolidColorBrush x:Key="WeatherAccentBrush" Color="#D1C3C6" />
-            <SolidColorBrush x:Key="RightStatusAccentBrush" Color="#D0C9CF" />
-
-            <Style x:Key="MonoTextStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="JetBrains Mono" />
-            </Style>
-            <Style x:Key="SmallTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
-                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontSize" Value="10" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="MutedSmallTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
-                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-                <Setter Property="FontSize" Value="9" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="PrimaryTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
-                <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="DateTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MonoTextStyle}">
-                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontSize" Value="10" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="BarGroupStyle" TargetType="Border">
-                <Setter Property="Height" Value="30" />
-                <Setter Property="Padding" Value="10,0" />
-                <Setter Property="Background" Value="{StaticResource ShellGroupBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource ShellGroupBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="15" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="UtilityCircleStyle" TargetType="Border">
-                <Setter Property="Width" Value="22" />
-                <Setter Property="Height" Value="22" />
-                <Setter Property="Background" Value="{StaticResource UtilityButtonBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource UtilityButtonBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="11" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="SymbolGlyphStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="Segoe UI Symbol" />
-                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontSize" Value="10" />
-                <Setter Property="HorizontalAlignment" Value="Center" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
 
             <MenuFlyout x:Key="LeftZoneFlyout">
                 <MenuFlyoutItem Text="Open Launcher" Click="OnOpenLauncherFlyoutClick" />
@@ -127,8 +56,8 @@
                         </Border>
                         <StackPanel MinWidth="180" MaxWidth="320" VerticalAlignment="Center" Spacing="-4">
                             <TextBlock Style="{StaticResource MutedSmallTextStyle}" CharacterSpacing="80"
-                                Text="{Binding ActiveWindowAppName}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Style="{StaticResource PrimaryTextStyle}" Text="{Binding ActiveWindowTitle}" TextTrimming="CharacterEllipsis" />
+                                Text="{Binding ActiveContext.ActiveWindowAppName}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Style="{StaticResource PrimaryTextStyle}" Text="{Binding ActiveContext.ActiveWindowTitle}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>
@@ -151,52 +80,18 @@
                                 PointerEntered="OnResourcesAnchorPointerEntered" PointerExited="OnResourcesAnchorPointerExited"
                                 Tapped="OnResourcesAnchorTapped">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                        <Grid Width="20" Height="20">
-                                            <Ellipse Width="20" Height="20" Stroke="{StaticResource ShellTrackBrush}" StrokeThickness="1.4" />
-                                            <Path Data="{Binding MemoryUsagePercentValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=20}"
-                                                Stroke="{Binding MemoryIndicatorBrush}" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                                            <Viewbox Width="8" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Grid Width="10" Height="10">
-                                                    <Rectangle Width="7" Height="4.6" RadiusX="0.8" RadiusY="0.8" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                        Stroke="{Binding MemoryIndicatorBrush}" StrokeThickness="1" />
-                                                    <Rectangle Width="3.8" Height="0.8" Margin="0,-1.2,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{Binding MemoryIndicatorBrush}" />
-                                                    <Rectangle Width="3.8" Height="0.8" Margin="0,1.2,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{Binding MemoryIndicatorBrush}" />
-                                                </Grid>
-                                            </Viewbox>
-                                        </Grid>
-                                        <TextBlock Style="{StaticResource SmallTextStyle}" Foreground="{Binding MemoryIndicatorBrush}" Text="{Binding MemoryUsageText}" />
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                        <Grid Width="20" Height="20">
-                                            <Ellipse Width="20" Height="20" Stroke="{StaticResource ShellTrackBrush}" StrokeThickness="1.4" />
-                                            <Path Data="{Binding TemperatureIndicatorValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=20}"
-                                                Stroke="{Binding TemperatureIndicatorBrush}" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                                            <Viewbox Width="8" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Grid Width="10" Height="10">
-                                                    <Rectangle Width="1.4" Height="4.7" RadiusX="0.7" RadiusY="0.7" Margin="0,0.8,0,0" HorizontalAlignment="Center" VerticalAlignment="Top"
-                                                        Fill="{Binding TemperatureIndicatorBrush}" />
-                                                    <Ellipse Width="3.6" Height="3.6" HorizontalAlignment="Center" VerticalAlignment="Bottom" Fill="{Binding TemperatureIndicatorBrush}" />
-                                                </Grid>
-                                            </Viewbox>
-                                        </Grid>
-                                        <TextBlock Style="{StaticResource SmallTextStyle}" Foreground="{Binding TemperatureIndicatorBrush}" Text="{Binding TemperatureText}" />
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                        <Grid Width="20" Height="20">
-                                            <Ellipse Width="20" Height="20" Stroke="{StaticResource ShellTrackBrush}" StrokeThickness="1.4" />
-                                            <Path Data="{Binding CpuUsagePercentValue, Converter={StaticResource PercentageToArcGeometryConverter}, ConverterParameter=20}"
-                                                Stroke="{Binding CpuIndicatorBrush}" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                                            <Viewbox Width="8" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Grid Width="10" Height="10">
-                                                    <Rectangle Width="1.4" Height="2.2" Margin="1.2,0,0,1" HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="{Binding CpuIndicatorBrush}" />
-                                                    <Rectangle Width="1.4" Height="4.0" Margin="0,0,0,1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Fill="{Binding CpuIndicatorBrush}" />
-                                                    <Rectangle Width="1.4" Height="5.6" Margin="0,0,1.2,1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="{Binding CpuIndicatorBrush}" />
-                                                </Grid>
-                                            </Viewbox>
-                                        </Grid>
-                                        <TextBlock Style="{StaticResource SmallTextStyle}" Foreground="{Binding CpuIndicatorBrush}" Text="{Binding CpuUsageText}" />
-                                    </StackPanel>
+                                    <controls:ResourceRingView ProgressValue="{Binding Resources.Memory.ProgressValue}"
+                                        IndicatorBrush="{Binding Resources.Memory.IndicatorBrush}"
+                                        ValueText="{Binding Resources.Memory.ValueText}"
+                                        IconKind="Memory" />
+                                    <controls:ResourceRingView ProgressValue="{Binding Resources.Temperature.ProgressValue}"
+                                        IndicatorBrush="{Binding Resources.Temperature.IndicatorBrush}"
+                                        ValueText="{Binding Resources.Temperature.ValueText}"
+                                        IconKind="Temperature" />
+                                    <controls:ResourceRingView ProgressValue="{Binding Resources.Cpu.ProgressValue}"
+                                        IndicatorBrush="{Binding Resources.Cpu.IndicatorBrush}"
+                                        ValueText="{Binding Resources.Cpu.ValueText}"
+                                        IconKind="Cpu" />
                                 </StackPanel>
                             </Grid>
                             <Grid Grid.Column="1" MinWidth="108" MaxWidth="132" VerticalAlignment="Center">
@@ -252,9 +147,9 @@
                             <Border x:Name="ClockAnchor" Grid.Column="0" Background="Transparent"
                                 PointerEntered="OnClockAnchorPointerEntered" PointerExited="OnClockAnchorPointerExited" Tapped="OnClockAnchorTapped">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <TextBlock Style="{StaticResource PrimaryTextStyle}" FontSize="12" Text="{Binding CurrentTime}" />
+                                    <TextBlock Style="{StaticResource PrimaryTextStyle}" FontSize="12" Text="{Binding Clock.CurrentTime}" />
                                     <TextBlock Style="{StaticResource DateTextStyle}" Text="·" />
-                                    <TextBlock Style="{StaticResource DateTextStyle}" Text="{Binding CurrentDate}" />
+                                    <TextBlock Style="{StaticResource DateTextStyle}" Text="{Binding Clock.CurrentDate}" />
                                 </StackPanel>
                             </Border>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -302,10 +197,10 @@
                             BorderThickness="1" CornerRadius="14">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <TextBlock Style="{StaticResource SmallTextStyle}" Foreground="{StaticResource PrimaryTextBrush}" Text="EN" />
-                                <Ellipse Width="5" Height="5" Fill="{Binding ConnectionStateForeground}" />
-                                <Ellipse Width="5" Height="5" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding IsAudioAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
-                                <Ellipse Width="5" Height="5" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding HasNotifications, Converter={StaticResource BoolToOpacityConverter}}" />
-                                <Rectangle Width="5" Height="5" RadiusX="1" RadiusY="1" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding IsNetworkAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
+                                <Ellipse Width="5" Height="5" Fill="{Binding Status.ConnectionStateForeground}" />
+                                <Ellipse Width="5" Height="5" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding Status.IsAudioAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
+                                <Ellipse Width="5" Height="5" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding Status.HasNotifications, Converter={StaticResource BoolToOpacityConverter}}" />
+                                <Rectangle Width="5" Height="5" RadiusX="1" RadiusY="1" Fill="{StaticResource RightStatusAccentBrush}" Opacity="{Binding Status.IsNetworkAvailable, Converter={StaticResource BoolToOpacityConverter}}" />
                                 <Ellipse Width="5" Height="5" Stroke="{StaticResource RightStatusAccentBrush}" StrokeThickness="1" Opacity="0.75" />
                             </StackPanel>
                         </Border>

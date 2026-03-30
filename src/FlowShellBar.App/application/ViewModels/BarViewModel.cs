@@ -64,6 +64,15 @@ public sealed class BarViewModel : BindableBase
         _logger = logger;
 
         Workspaces = [];
+        ActiveContext = new BarActiveContextSectionViewModel();
+        Resources = new BarResourceSectionViewModel();
+        Clock = new BarClockSectionViewModel();
+        Status = new BarStatusSectionViewModel
+        {
+            ConnectionStateBackground = _connectionStateBackground,
+            ConnectionStateBorderBrush = _connectionStateBorderBrush,
+            ConnectionStateForeground = _connectionStateForeground,
+        };
 
         OpenLauncherCommand = new AsyncDelegateCommand(_ => _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.OpenLauncher)));
         OpenStatusPanelCommand = new AsyncDelegateCommand(_ => _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.OpenStatusPanel)));
@@ -81,6 +90,14 @@ public sealed class BarViewModel : BindableBase
     }
 
     public ObservableCollection<WorkspaceItemViewModel> Workspaces { get; }
+
+    public BarActiveContextSectionViewModel ActiveContext { get; }
+
+    public BarResourceSectionViewModel Resources { get; }
+
+    public BarClockSectionViewModel Clock { get; }
+
+    public BarStatusSectionViewModel Status { get; }
 
     public ICommand OpenLauncherCommand { get; }
 
@@ -432,6 +449,9 @@ public sealed class BarViewModel : BindableBase
         ActiveWindowAppName = model.ActiveWindowAppName;
         ActiveWindowTitle = model.ActiveWindowTitle;
         ActiveWorkspaceLabel = model.ActiveWorkspaceLabel;
+        ActiveContext.ActiveWindowAppName = ActiveWindowAppName;
+        ActiveContext.ActiveWindowTitle = ActiveWindowTitle;
+        ActiveContext.ActiveWorkspaceLabel = ActiveWorkspaceLabel;
         MemoryUsagePercentValue = Math.Clamp(model.ResourceMetrics.MemoryUsagePercent, 0, 100);
         CpuUsagePercentValue = Math.Clamp(model.ResourceMetrics.CpuUsagePercent, 0, 100);
         TemperatureIndicatorValue = BuildTemperatureIndicatorValue(model.ResourceMetrics);
@@ -444,6 +464,15 @@ public sealed class BarViewModel : BindableBase
             cautionThreshold: 65,
             warningThreshold: 80);
         CpuIndicatorBrush = BuildIndicatorBrush(CpuUsagePercentValue, cautionThreshold: null, warningThreshold: 90);
+        Resources.Memory.ProgressValue = MemoryUsagePercentValue;
+        Resources.Memory.ValueText = MemoryUsageText;
+        Resources.Memory.IndicatorBrush = MemoryIndicatorBrush;
+        Resources.Temperature.ProgressValue = TemperatureIndicatorValue;
+        Resources.Temperature.ValueText = TemperatureText;
+        Resources.Temperature.IndicatorBrush = TemperatureIndicatorBrush;
+        Resources.Cpu.ProgressValue = CpuUsagePercentValue;
+        Resources.Cpu.ValueText = CpuUsageText;
+        Resources.Cpu.IndicatorBrush = CpuIndicatorBrush;
         RamUsedPopupText = FormatGigabytes(model.ResourceMetrics.MemoryUsedBytes);
         RamFreePopupText = FormatGigabytes(model.ResourceMetrics.MemoryAvailableBytes);
         RamTotalPopupText = FormatGigabytes(model.ResourceMetrics.MemoryTotalBytes);
@@ -451,12 +480,26 @@ public sealed class BarViewModel : BindableBase
         GpuTemperaturePopupText = FormatTemperature(model.ResourceMetrics.GpuTemperatureCelsius);
         CpuLoadPopupText = BuildLoadLevelText(model.ResourceMetrics.CpuUsagePercent);
         GpuLoadPopupText = BuildLoadLevelText(model.ResourceMetrics.GpuUsagePercent);
+        Resources.Popup.RamUsedText = RamUsedPopupText;
+        Resources.Popup.RamFreeText = RamFreePopupText;
+        Resources.Popup.RamTotalText = RamTotalPopupText;
+        Resources.Popup.CpuTemperatureText = CpuTemperaturePopupText;
+        Resources.Popup.GpuTemperatureText = GpuTemperaturePopupText;
+        Resources.Popup.CpuLoadText = CpuLoadPopupText;
+        Resources.Popup.GpuLoadText = GpuLoadPopupText;
         CurrentTime = model.CurrentTime;
         CurrentDate = model.CurrentDate;
+        Clock.CurrentTime = CurrentTime;
+        Clock.CurrentDate = CurrentDate;
         SurfacePlacement = model.SurfacePlacement;
         IsNetworkAvailable = model.StatusCluster.IsNetworkAvailable;
         IsAudioAvailable = model.StatusCluster.IsAudioAvailable;
         HasNotifications = model.StatusCluster.HasNotifications;
+        Status.RuntimeModeLabel = RuntimeModeLabel;
+        Status.ConnectionStateLabel = ConnectionStateLabel;
+        Status.IsNetworkAvailable = IsNetworkAvailable;
+        Status.IsAudioAvailable = IsAudioAvailable;
+        Status.HasNotifications = HasNotifications;
         ApplyConnectionPalette(model.ConnectionState);
 
         SyncWorkspaces(model.Workspaces);
@@ -471,18 +514,27 @@ public sealed class BarViewModel : BindableBase
                 ConnectionStateBackground = CreateBrush("#183426");
                 ConnectionStateBorderBrush = CreateBrush("#2D7050");
                 ConnectionStateForeground = CreateBrush("#CBF7DC");
+                Status.ConnectionStateBackground = ConnectionStateBackground;
+                Status.ConnectionStateBorderBrush = ConnectionStateBorderBrush;
+                Status.ConnectionStateForeground = ConnectionStateForeground;
                 break;
 
             case BarConnectionState.Degraded:
                 ConnectionStateBackground = CreateBrush("#3A2C13");
                 ConnectionStateBorderBrush = CreateBrush("#8A6B23");
                 ConnectionStateForeground = CreateBrush("#FFE8A3");
+                Status.ConnectionStateBackground = ConnectionStateBackground;
+                Status.ConnectionStateBorderBrush = ConnectionStateBorderBrush;
+                Status.ConnectionStateForeground = ConnectionStateForeground;
                 break;
 
             default:
                 ConnectionStateBackground = CreateBrush("#342322");
                 ConnectionStateBorderBrush = CreateBrush("#7A4741");
                 ConnectionStateForeground = CreateBrush("#FFD8D3");
+                Status.ConnectionStateBackground = ConnectionStateBackground;
+                Status.ConnectionStateBorderBrush = ConnectionStateBorderBrush;
+                Status.ConnectionStateForeground = ConnectionStateForeground;
                 break;
         }
     }

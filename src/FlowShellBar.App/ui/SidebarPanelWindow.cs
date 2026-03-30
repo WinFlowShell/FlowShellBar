@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.ComponentModel;
 
 using FlowShellBar.App.Application;
@@ -8,7 +7,6 @@ using FlowShellBar.App.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.UI.Text;
 
@@ -116,10 +114,7 @@ public sealed class SidebarPanelWindow : Window
 
     private FrameworkElement BuildContent()
     {
-        var root = new Grid
-        {
-            Background = CreateBrush("#0F0E0E"),
-        };
+        var root = ShellSurfaceVisualFactory.CreateRootSurfaceGrid();
 
         var escapeAccelerator = new KeyboardAccelerator
         {
@@ -127,19 +122,6 @@ public sealed class SidebarPanelWindow : Window
         };
         escapeAccelerator.Invoked += OnEscapeAcceleratorInvoked;
         root.KeyboardAccelerators.Add(escapeAccelerator);
-
-        var chrome = new Border
-        {
-            Background = CreateBrush("#151416"),
-            BorderBrush = CreateBrush("#302D31"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = _panelKind == BarPanelSurfaceKind.LeftSidebar
-                ? new CornerRadius(0, 18, 18, 0)
-                : new CornerRadius(18, 0, 0, 18),
-            Padding = new Thickness(20, 18, 20, 18),
-            Shadow = new ThemeShadow(),
-            Translation = new Vector3(0, 0, 28),
-        };
 
         var contentStack = new StackPanel
         {
@@ -151,12 +133,12 @@ public sealed class SidebarPanelWindow : Window
             Spacing = 4,
             Children =
             {
-                CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "LEFT SIDEBAR" : "RIGHT SIDEBAR", "#948F94", 10, FontWeights.SemiBold, 120),
-                CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "FlowShell Launcher" : "FlowShell Control", "#E7E1E7", 18, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "LEFT SIDEBAR" : "RIGHT SIDEBAR", "#948F94", 10, FontWeights.SemiBold, 120),
+                ShellSurfaceVisualFactory.CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "FlowShell Launcher" : "FlowShell Control", "#E7E1E7", 18, FontWeights.SemiBold),
             },
         });
 
-        contentStack.Children.Add(CreateInfoCard("stub surface aligned to illogical-impulse shell vocabulary"));
+        contentStack.Children.Add(ShellSurfaceVisualFactory.CreateInfoCard("stub surface aligned to illogical-impulse shell vocabulary"));
 
         var scrollViewer = new ScrollViewer
         {
@@ -167,6 +149,13 @@ public sealed class SidebarPanelWindow : Window
         };
 
         contentStack.Children.Add(scrollViewer);
+        var chrome = ShellSurfaceVisualFactory.CreateSurfaceChrome(
+            contentStack,
+            _panelKind == BarPanelSurfaceKind.LeftSidebar
+                ? new CornerRadius(0, 18, 18, 0)
+                : new CornerRadius(18, 0, 0, 18),
+            new Thickness(20, 18, 20, 18),
+            28);
         chrome.Child = contentStack;
         root.Children.Add(chrome);
         return root;
@@ -174,14 +163,14 @@ public sealed class SidebarPanelWindow : Window
 
     private UIElement BuildLeftSidebarStub()
     {
-        var stack = CreateSectionStack();
+        var stack = ShellSurfaceVisualFactory.CreateSectionStack();
 
         stack.Children.Add(CreateToolbarStrip("intelligence", "translator", "anime"));
 
-        stack.Children.Add(CreateCard(
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateCard(
             "search",
             [
-                CreateTextBlock("overview search / launcher surface", "#CBC5CA", 11, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateTextBlock("overview search / launcher surface", "#CBC5CA", 11, FontWeights.SemiBold),
                 CreateSearchBarStub("search applications, actions, files"),
             ]));
 
@@ -203,25 +192,25 @@ public sealed class SidebarPanelWindow : Window
         Grid.SetColumnSpan(secondRow, 2);
         quickstartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         quickstartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        stack.Children.Add(CreateSection("quick access", quickstartGrid, secondRow));
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection("quick access", quickstartGrid, secondRow));
 
-        stack.Children.Add(CreateSection(
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection(
             "context",
-            CreateCard(
+            ShellSurfaceVisualFactory.CreateCard(
                 "active workspace",
                 [
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWorkspaceLabel), "#E7E1E7", 13, FontWeights.SemiBold),
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWindowAppName), "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.ActiveContext)}.{nameof(BarActiveContextSectionViewModel.ActiveWorkspaceLabel)}", "#E7E1E7", 13, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.ActiveContext)}.{nameof(BarActiveContextSectionViewModel.ActiveWindowAppName)}", "#CBC5CA", 10, FontWeights.SemiBold),
                 ],
                 "#2D2A2F"),
-            CreateCard(
+            ShellSurfaceVisualFactory.CreateCard(
                 "focus",
                 [
-                    CreateBoundTextBlock(nameof(BarViewModel.ActiveWindowTitle), "#E7E1E7", 12, FontWeights.SemiBold),
-                    CreateTextBlock("overview card / pinned actions placeholder", "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.ActiveContext)}.{nameof(BarActiveContextSectionViewModel.ActiveWindowTitle)}", "#E7E1E7", 12, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock("overview card / pinned actions placeholder", "#CBC5CA", 10, FontWeights.SemiBold),
                 ])));
 
-        stack.Children.Add(CreateSection(
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection(
             "suggested",
             CreateListCard("terminal", "favorite session entry", "#CBC4CB"),
             CreateListCard("browser", "workspace launcher slot", "#D1C3C6"),
@@ -232,7 +221,7 @@ public sealed class SidebarPanelWindow : Window
 
     private UIElement BuildRightSidebarStub()
     {
-        var stack = CreateSectionStack();
+        var stack = ShellSurfaceVisualFactory.CreateSectionStack();
 
         stack.Children.Add(CreateTopSystemRow());
 
@@ -249,25 +238,25 @@ public sealed class SidebarPanelWindow : Window
         controlsGrid.Children.Add(CreateQuickToggleCard("wifi", "network", 1, 0));
         controlsGrid.Children.Add(CreateQuickToggleCard("bluetooth", "devices", 0, 1));
         controlsGrid.Children.Add(CreateQuickToggleCard("night", "display", 1, 1));
-        stack.Children.Add(CreateSection("quick toggles", controlsGrid));
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection("quick toggles", controlsGrid));
 
-        stack.Children.Add(CreateSection(
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection(
             "center widgets",
-            CreateCard(
+            ShellSurfaceVisualFactory.CreateCard(
                 "session",
                 [
-                    CreateBoundTextBlock(nameof(BarViewModel.RuntimeModeLabel), "#E7E1E7", 13, FontWeights.SemiBold),
-                    CreateBoundTextBlock(nameof(BarViewModel.ConnectionStateLabel), "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.Status)}.{nameof(BarStatusSectionViewModel.RuntimeModeLabel)}", "#E7E1E7", 13, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.Status)}.{nameof(BarStatusSectionViewModel.ConnectionStateLabel)}", "#CBC5CA", 10, FontWeights.SemiBold),
                 ],
                 "#222124"),
-            CreateCard(
+            ShellSurfaceVisualFactory.CreateCard(
                 "surface state",
                 [
-                    CreateBoundTextBlock(nameof(BarViewModel.CurrentTime), "#E7E1E7", 12, FontWeights.SemiBold),
-                    CreateBoundTextBlock(nameof(BarViewModel.CurrentDate), "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.Clock)}.{nameof(BarClockSectionViewModel.CurrentTime)}", "#E7E1E7", 12, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateBoundTextBlock($"{nameof(BarViewModel.Clock)}.{nameof(BarClockSectionViewModel.CurrentDate)}", "#CBC5CA", 10, FontWeights.SemiBold),
                 ])));
 
-        stack.Children.Add(CreateSection(
+        stack.Children.Add(ShellSurfaceVisualFactory.CreateSection(
             "bottom widgets",
             CreateNotificationCard("shell update", "stub notification card"),
             CreateNotificationCard("session health", "runtime and diagnostics placeholder"),
@@ -358,85 +347,13 @@ public sealed class SidebarPanelWindow : Window
         }
     }
 
-    private static StackPanel CreateSectionStack()
-    {
-        return new StackPanel
-        {
-            Spacing = 18,
-        };
-    }
-
-    private static UIElement CreateSection(string title, params UIElement[] body)
-    {
-        var stack = new StackPanel
-        {
-            Spacing = 10,
-        };
-
-        stack.Children.Add(CreateTextBlock(title, "#CBC5CA", 11, FontWeights.SemiBold));
-        foreach (var child in body)
-        {
-            stack.Children.Add(child);
-        }
-
-        return stack;
-    }
-
-    private static UIElement CreateCard(string title, IEnumerable<UIElement> body, string? background = null)
-    {
-        var border = new Border
-        {
-            Background = CreateBrush(background ?? "#1D1C1F"),
-            CornerRadius = new CornerRadius(14),
-            Padding = new Thickness(14, 12, 14, 12),
-        };
-
-        var stack = new StackPanel
-        {
-            Spacing = 8,
-        };
-
-        stack.Children.Add(CreateTextBlock(title, "#CBC5CA", 11, FontWeights.SemiBold));
-        foreach (var child in body)
-        {
-            stack.Children.Add(child);
-        }
-
-        border.Child = stack;
-        return border;
-    }
-
-    private static UIElement CreateInfoCard(string text)
-    {
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        grid.Children.Add(CreateTextBlock(">", "#CBC5CA", 10, FontWeights.SemiBold));
-
-        var textBlock = CreateTextBlock(text, "#CBC5CA", 10, FontWeights.SemiBold);
-        textBlock.Margin = new Thickness(10, 0, 0, 0);
-        Grid.SetColumn(textBlock, 1);
-        grid.Children.Add(textBlock);
-
-        return new Border
-        {
-            Background = CreateBrush("#1D1C1F"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(12, 10, 12, 10),
-            Child = grid,
-        };
-    }
-
     private static UIElement CreateSoftSlot(string text)
     {
-        return new Border
-        {
-            Background = CreateBrush("#252327"),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(10, 8, 10, 8),
-            Child = CreateTextBlock(text, "#CBC5CA", 10, FontWeights.SemiBold),
-        };
+        return ShellSurfaceVisualFactory.CreatePanel(
+            ShellSurfaceVisualFactory.CreateTextBlock(text, "#CBC5CA", 10, FontWeights.SemiBold),
+            "#252327",
+            padding: new Thickness(10, 8, 10, 8),
+            cornerRadius: new CornerRadius(10));
     }
 
     private static UIElement CreateToolbarStrip(params string[] items)
@@ -451,22 +368,18 @@ public sealed class SidebarPanelWindow : Window
         {
             row.Children.Add(new Border
             {
-                Background = CreateBrush(index == 0 ? "#2D2A2F" : "#242225"),
+                Background = ShellSurfaceVisualFactory.CreateBrush(index == 0 ? "#2D2A2F" : "#242225"),
                 CornerRadius = new CornerRadius(14),
                 Padding = new Thickness(12, 6, 12, 6),
-                Child = CreateTextBlock(items[index], index == 0 ? "#E7E1E7" : "#CBC5CA", 10, FontWeights.SemiBold),
+                Child = ShellSurfaceVisualFactory.CreateTextBlock(items[index], index == 0 ? "#E7E1E7" : "#CBC5CA", 10, FontWeights.SemiBold),
             });
         }
 
-        return new Border
-        {
-            Background = CreateBrush("#1D1C1F"),
-            BorderBrush = CreateBrush("#343136"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(18),
-            Padding = new Thickness(6),
-            Child = row,
-        };
+        return ShellSurfaceVisualFactory.CreatePanel(
+            row,
+            borderColor: "#343136",
+            padding: new Thickness(6),
+            cornerRadius: new CornerRadius(18));
     }
 
     private static UIElement CreateSearchBarStub(string placeholder)
@@ -478,11 +391,11 @@ public sealed class SidebarPanelWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        var leftGlyph = CreateTextBlock("S", "#CBC5CA", 10, FontWeights.SemiBold);
+        var leftGlyph = ShellSurfaceVisualFactory.CreateTextBlock("S", "#CBC5CA", 10, FontWeights.SemiBold);
         leftGlyph.VerticalAlignment = VerticalAlignment.Center;
         grid.Children.Add(leftGlyph);
 
-        var placeholderText = CreateTextBlock(placeholder, "#948F94", 10, FontWeights.SemiBold);
+        var placeholderText = ShellSurfaceVisualFactory.CreateTextBlock(placeholder, "#948F94", 10, FontWeights.SemiBold);
         placeholderText.Margin = new Thickness(10, 0, 10, 0);
         placeholderText.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(placeholderText, 1);
@@ -490,45 +403,42 @@ public sealed class SidebarPanelWindow : Window
 
         var lensAction = new Border
         {
-            Background = CreateBrush("#2A282D"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#2A282D"),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(8, 4, 8, 4),
             Margin = new Thickness(0, 0, 6, 0),
-            Child = CreateTextBlock("L", "#CBC5CA", 9, FontWeights.SemiBold),
+            Child = ShellSurfaceVisualFactory.CreateTextBlock("L", "#CBC5CA", 9, FontWeights.SemiBold),
         };
         Grid.SetColumn(lensAction, 2);
         grid.Children.Add(lensAction);
 
         var musicAction = new Border
         {
-            Background = CreateBrush("#2A282D"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#2A282D"),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(8, 4, 8, 4),
             Margin = new Thickness(0, 0, 6, 0),
-            Child = CreateTextBlock("M", "#CBC5CA", 9, FontWeights.SemiBold),
+            Child = ShellSurfaceVisualFactory.CreateTextBlock("M", "#CBC5CA", 9, FontWeights.SemiBold),
         };
         Grid.SetColumn(musicAction, 3);
         grid.Children.Add(musicAction);
 
         var shortcut = new Border
         {
-            Background = CreateBrush("#2A282D"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#2A282D"),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(8, 4, 8, 4),
-            Child = CreateTextBlock("Ctrl K", "#CBC5CA", 9, FontWeights.SemiBold),
+            Child = ShellSurfaceVisualFactory.CreateTextBlock("Ctrl K", "#CBC5CA", 9, FontWeights.SemiBold),
         };
         Grid.SetColumn(shortcut, 4);
         grid.Children.Add(shortcut);
 
-        return new Border
-        {
-            Background = CreateBrush("#1B1A1C"),
-            BorderBrush = CreateBrush("#343136"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(16),
-            Padding = new Thickness(12, 10, 12, 10),
-            Child = grid,
-        };
+        return ShellSurfaceVisualFactory.CreatePanel(
+            grid,
+            background: "#1B1A1C",
+            borderColor: "#343136",
+            padding: new Thickness(12, 10, 12, 10),
+            cornerRadius: new CornerRadius(16));
     }
 
     private static UIElement CreateTopSystemRow()
@@ -540,7 +450,7 @@ public sealed class SidebarPanelWindow : Window
 
         var uptime = new Border
         {
-            Background = CreateBrush("#1D1C1F"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#1D1C1F"),
             CornerRadius = new CornerRadius(16),
             Padding = new Thickness(12, 7, 12, 7),
             Child = new StackPanel
@@ -549,8 +459,8 @@ public sealed class SidebarPanelWindow : Window
                 Spacing = 8,
                 Children =
                 {
-                    CreateTextBlock("Fs", "#E7E1E7", 11, FontWeights.SemiBold),
-                    CreateTextBlock("Up 04:12", "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock("Fs", "#E7E1E7", 11, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock("Up 04:12", "#CBC5CA", 10, FontWeights.SemiBold),
                 },
             },
         };
@@ -568,13 +478,10 @@ public sealed class SidebarPanelWindow : Window
                 CreateToolbarActionButton("power"),
             },
         };
-        var actionGroup = new Border
-        {
-            Background = CreateBrush("#1D1C1F"),
-            CornerRadius = new CornerRadius(18),
-            Padding = new Thickness(6),
-            Child = actions,
-        };
+        var actionGroup = ShellSurfaceVisualFactory.CreatePanel(
+            actions,
+            padding: new Thickness(6),
+            cornerRadius: new CornerRadius(18));
         Grid.SetColumn(actionGroup, 2);
         grid.Children.Add(actionGroup);
 
@@ -583,7 +490,7 @@ public sealed class SidebarPanelWindow : Window
 
     private static UIElement CreateToolbarActionButton(string label)
     {
-        var text = CreateTextBlock(label.Substring(0, 1).ToUpperInvariant(), "#CBC5CA", 11, FontWeights.SemiBold);
+        var text = ShellSurfaceVisualFactory.CreateTextBlock(label.Substring(0, 1).ToUpperInvariant(), "#CBC5CA", 11, FontWeights.SemiBold);
         text.HorizontalAlignment = HorizontalAlignment.Center;
         text.VerticalAlignment = VerticalAlignment.Center;
 
@@ -591,8 +498,8 @@ public sealed class SidebarPanelWindow : Window
         {
             Width = 32,
             Height = 32,
-            Background = CreateBrush("#1D1C1F"),
-            BorderBrush = CreateBrush("#343136"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#1D1C1F"),
+            BorderBrush = ShellSurfaceVisualFactory.CreateBrush("#343136"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(16),
             Child = text,
@@ -603,8 +510,8 @@ public sealed class SidebarPanelWindow : Window
     {
         var border = new Border
         {
-            Background = CreateBrush("#1D1C1F"),
-            BorderBrush = CreateBrush("#343136"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#1D1C1F"),
+            BorderBrush = ShellSurfaceVisualFactory.CreateBrush("#343136"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(12, 10, 12, 10),
@@ -613,8 +520,8 @@ public sealed class SidebarPanelWindow : Window
                 Spacing = 5,
                 Children =
                 {
-                    CreateTextBlock(title, "#E7E1E7", 11, FontWeights.SemiBold),
-                    CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock(title, "#E7E1E7", 11, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
                 },
             },
         };
@@ -628,7 +535,7 @@ public sealed class SidebarPanelWindow : Window
     {
         var border = new Border
         {
-            Background = CreateBrush("#1D1C1F"),
+            Background = ShellSurfaceVisualFactory.CreateBrush("#1D1C1F"),
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(10, 12, 10, 12),
             Margin = withRightMargin ? new Thickness(0, 0, 8, 0) : new Thickness(0),
@@ -637,8 +544,8 @@ public sealed class SidebarPanelWindow : Window
                 Spacing = 4,
                 Children =
                 {
-                    CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
-                    CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
+                    ShellSurfaceVisualFactory.CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
                 },
             },
         };
@@ -657,7 +564,7 @@ public sealed class SidebarPanelWindow : Window
         {
             Width = 8,
             Height = 8,
-            Fill = CreateBrush(dotColor),
+            Fill = ShellSurfaceVisualFactory.CreateBrush(dotColor),
             VerticalAlignment = VerticalAlignment.Center,
         });
 
@@ -667,78 +574,27 @@ public sealed class SidebarPanelWindow : Window
             Margin = new Thickness(10, 0, 0, 0),
             Children =
             {
-                CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
-                CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
             },
         };
 
         Grid.SetColumn(textStack, 1);
         row.Children.Add(textStack);
 
-        return new Border
-        {
-            Background = CreateBrush("#1D1C1F"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(12, 10, 12, 10),
-            Child = row,
-        };
+        return ShellSurfaceVisualFactory.CreatePanel(row);
     }
 
     private static UIElement CreateNotificationCard(string title, string subtitle)
     {
-        return new Border
+        return ShellSurfaceVisualFactory.CreatePanel(new StackPanel
         {
-            Background = CreateBrush("#1D1C1F"),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(12, 10, 12, 10),
-            Child = new StackPanel
+            Spacing = 3,
+            Children =
             {
-                Spacing = 3,
-                Children =
-                {
-                    CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
-                    CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
-                },
+                ShellSurfaceVisualFactory.CreateTextBlock(title, "#E7E1E7", 12, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
             },
-        };
-    }
-
-    private static TextBlock CreateTextBlock(string text, string color, double size, Windows.UI.Text.FontWeight weight, int characterSpacing = 0)
-    {
-        return new TextBlock
-        {
-            Text = text,
-            Foreground = CreateBrush(color),
-            FontFamily = new FontFamily("JetBrains Mono"),
-            FontSize = size,
-            FontWeight = weight,
-            CharacterSpacing = characterSpacing,
-            TextWrapping = TextWrapping.Wrap,
-        };
-    }
-
-    private static TextBlock CreateBoundTextBlock(string path, string color, double size, Windows.UI.Text.FontWeight weight)
-    {
-        var textBlock = CreateTextBlock(string.Empty, color, size, weight);
-        textBlock.SetBinding(TextBlock.TextProperty, new Microsoft.UI.Xaml.Data.Binding
-        {
-            Path = new PropertyPath(path),
         });
-        return textBlock;
-    }
-
-    private static SolidColorBrush CreateBrush(string color)
-    {
-        var hex = color.TrimStart('#');
-        if (hex.Length == 6)
-        {
-            hex = $"FF{hex}";
-        }
-
-        return new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(
-            Convert.ToByte(hex.Substring(0, 2), 16),
-            Convert.ToByte(hex.Substring(2, 2), 16),
-            Convert.ToByte(hex.Substring(4, 2), 16),
-            Convert.ToByte(hex.Substring(6, 2), 16)));
     }
 }

@@ -19,16 +19,9 @@ public sealed partial class MainWindow : Window
     private readonly BarViewModel _viewModel;
     private readonly IBarActionDispatcher _actionDispatcher;
     private readonly IAppLogger _logger;
+    private readonly TransientSurfaceCoordinator _transientSurfaceCoordinator;
     private DispatcherQueueTimer? _topmostEnforcerTimer;
-    private DispatcherQueueTimer? _transientPopupCloseTimer;
-    private SidebarPanelWindow? _leftPanelWindow;
-    private SidebarPanelWindow? _rightPanelWindow;
-    private AnchoredPopupWindow? _popupWindow;
     private bool _shellSurfacePrepared;
-    private bool _isResourcesAnchorHovered;
-    private bool _isWorkspaceAnchorHovered;
-    private bool _isClockAnchorHovered;
-    private bool _isPopupHovered;
 
     public MainWindow(
         BarViewModel viewModel,
@@ -41,17 +34,15 @@ public sealed partial class MainWindow : Window
 
         InitializeComponent();
         ShellRoot.DataContext = _viewModel;
+        _transientSurfaceCoordinator = new TransientSurfaceCoordinator(this, _viewModel, _logger, ResolvePopupAnchorBounds);
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         Activated += OnWindowActivated;
         Closed += OnWindowClosed;
-
-        InitializeTransientPopupTimer();
     }
 
     private void OnOpenLauncherFlyoutClick(object sender, RoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
+        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
     }
 
     private async void OnToggleOverviewFlyoutClick(object sender, RoutedEventArgs e)
@@ -61,14 +52,12 @@ public sealed partial class MainWindow : Window
 
     private void OnOpenStatusPanelFlyoutClick(object sender, RoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePanel(BarPanelSurfaceKind.RightSidebar);
+        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.RightSidebar);
     }
 
     private void OnLeftZoneTapped(object sender, TappedRoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
+        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
         e.Handled = true;
     }
 
@@ -83,75 +72,49 @@ public sealed partial class MainWindow : Window
 
     private void OnResourcesAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        _isResourcesAnchorHovered = true;
-        CancelTransientPopupCloseEvaluation();
-
-        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Resources)
-        {
-            _viewModel.ShowPopup(BarPopupSurfaceKind.Resources, pinned: false);
-        }
+        _transientSurfaceCoordinator.OnAnchorPointerEntered(BarPopupSurfaceKind.Resources);
     }
 
     private void OnResourcesAnchorPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        _isResourcesAnchorHovered = false;
-        ScheduleTransientPopupCloseEvaluation();
+        _transientSurfaceCoordinator.OnAnchorPointerExited(BarPopupSurfaceKind.Resources);
     }
 
     private void OnResourcesAnchorTapped(object sender, TappedRoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePopup(BarPopupSurfaceKind.Resources);
+        _transientSurfaceCoordinator.TogglePinnedPopup(BarPopupSurfaceKind.Resources);
         e.Handled = true;
     }
 
     private void OnClockAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        _isClockAnchorHovered = true;
-        CancelTransientPopupCloseEvaluation();
-
-        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Clock)
-        {
-            _viewModel.ShowPopup(BarPopupSurfaceKind.Clock, pinned: false);
-        }
+        _transientSurfaceCoordinator.OnAnchorPointerEntered(BarPopupSurfaceKind.Clock);
     }
 
     private void OnClockAnchorPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        _isClockAnchorHovered = false;
-        ScheduleTransientPopupCloseEvaluation();
+        _transientSurfaceCoordinator.OnAnchorPointerExited(BarPopupSurfaceKind.Clock);
     }
 
     private void OnClockAnchorTapped(object sender, TappedRoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePopup(BarPopupSurfaceKind.Clock);
+        _transientSurfaceCoordinator.TogglePinnedPopup(BarPopupSurfaceKind.Clock);
         e.Handled = true;
     }
 
     private void OnWorkspaceAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        _isWorkspaceAnchorHovered = true;
-        CancelTransientPopupCloseEvaluation();
-
-        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Workspaces)
-        {
-            _viewModel.ShowPopup(BarPopupSurfaceKind.Workspaces, pinned: false);
-        }
+        _transientSurfaceCoordinator.OnAnchorPointerEntered(BarPopupSurfaceKind.Workspaces);
     }
 
     private void OnWorkspaceAnchorPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        _isWorkspaceAnchorHovered = false;
-        ScheduleTransientPopupCloseEvaluation();
+        _transientSurfaceCoordinator.OnAnchorPointerExited(BarPopupSurfaceKind.Workspaces);
     }
 
     private void OnWorkspaceAnchorTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (_viewModel.ActivePopupSurface != BarPopupSurfaceKind.None && _viewModel.IsPopupPinned)
-        {
-            _viewModel.ClosePopup();
-        }
+        _transientSurfaceCoordinator.ClosePinnedPopupIfOpen();
     }
 
     private async void OnWorkspaceAnchorPointerWheelChanged(object sender, PointerRoutedEventArgs e)
@@ -170,15 +133,14 @@ public sealed partial class MainWindow : Window
 
     private async void OnWorkspaceAnchorRightTapped(object sender, RightTappedRoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
+        _transientSurfaceCoordinator.CancelTransientPopupCloseEvaluation();
         await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.ToggleOverview));
         e.Handled = true;
     }
 
     private void OnRightZoneTapped(object sender, TappedRoutedEventArgs e)
     {
-        CancelTransientPopupCloseEvaluation();
-        _viewModel.TogglePanel(BarPanelSurfaceKind.RightSidebar);
+        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.RightSidebar);
         e.Handled = true;
     }
 
@@ -211,9 +173,7 @@ public sealed partial class MainWindow : Window
         }
 
         ShellSurfaceWindowing.EnsureTopmost(this, noActivate: true);
-        _leftPanelWindow?.EnsureShellSurfaceZOrder();
-        _rightPanelWindow?.EnsureShellSurfaceZOrder();
-        _popupWindow?.EnsureShellSurfaceZOrder();
+        _transientSurfaceCoordinator.EnsureShellSurfaceZOrder();
     }
 
     private void ConfigureWindow()
@@ -238,18 +198,6 @@ public sealed partial class MainWindow : Window
             $"MainWindow configured: anchor={anchorSource}; client {bounds.Width}x{bounds.Height} at ({bounds.X},{bounds.Y}).");
     }
 
-    private void InitializeTransientPopupTimer()
-    {
-        _transientPopupCloseTimer = DispatcherQueue.GetForCurrentThread()?.CreateTimer();
-        if (_transientPopupCloseTimer is null)
-        {
-            return;
-        }
-
-        _transientPopupCloseTimer.Interval = TimeSpan.FromMilliseconds(160);
-        _transientPopupCloseTimer.Tick += OnTransientPopupCloseTimerTick;
-    }
-
     private void StartTopmostEnforcer()
     {
         if (_topmostEnforcerTimer is not null)
@@ -266,132 +214,6 @@ public sealed partial class MainWindow : Window
         _topmostEnforcerTimer.Interval = TimeSpan.FromSeconds(2);
         _topmostEnforcerTimer.Tick += (_, _) => EnsureShellSurfaceZOrder();
         _topmostEnforcerTimer.Start();
-    }
-
-    private void ScheduleTransientPopupCloseEvaluation()
-    {
-        if (_transientPopupCloseTimer is null)
-        {
-            return;
-        }
-
-        _transientPopupCloseTimer.Stop();
-        _transientPopupCloseTimer.Start();
-    }
-
-    private void CancelTransientPopupCloseEvaluation()
-    {
-        _transientPopupCloseTimer?.Stop();
-    }
-
-    private void OnTransientPopupCloseTimerTick(object? sender, object e)
-    {
-        _transientPopupCloseTimer?.Stop();
-
-        if (_viewModel.IsPopupPinned)
-        {
-            return;
-        }
-
-        if (_isResourcesAnchorHovered || _isWorkspaceAnchorHovered || _isClockAnchorHovered || _isPopupHovered)
-        {
-            return;
-        }
-
-        _viewModel.ClosePopup();
-    }
-
-    private void SyncAuxiliarySurfaces()
-    {
-        SyncLeftPanelWindow();
-        SyncRightPanelWindow();
-        SyncPopupWindow();
-    }
-
-    private void SyncLeftPanelWindow()
-    {
-        if (_viewModel.ActivePanelSurface != BarPanelSurfaceKind.LeftSidebar)
-        {
-            HideLeftPanelWindow();
-            return;
-        }
-
-        if (_leftPanelWindow is null)
-        {
-            _leftPanelWindow = new SidebarPanelWindow(
-                _viewModel,
-                _logger,
-                BarPanelSurfaceKind.LeftSidebar,
-                () => ShellSurfaceWindowing.GetWindowBounds(this),
-                OnPanelDismissRequested);
-            _leftPanelWindow.Closed += OnLeftPanelWindowClosed;
-            _leftPanelWindow.PrewarmShellSurface();
-        }
-
-        _leftPanelWindow.ShowSurface();
-        _leftPanelWindow.EnsureShellSurfaceZOrder();
-    }
-
-    private void SyncRightPanelWindow()
-    {
-        if (_viewModel.ActivePanelSurface != BarPanelSurfaceKind.RightSidebar)
-        {
-            HideRightPanelWindow();
-            return;
-        }
-
-        if (_rightPanelWindow is null)
-        {
-            _rightPanelWindow = new SidebarPanelWindow(
-                _viewModel,
-                _logger,
-                BarPanelSurfaceKind.RightSidebar,
-                () => ShellSurfaceWindowing.GetWindowBounds(this),
-                OnPanelDismissRequested);
-            _rightPanelWindow.Closed += OnRightPanelWindowClosed;
-            _rightPanelWindow.PrewarmShellSurface();
-        }
-
-        _rightPanelWindow.ShowSurface();
-        _rightPanelWindow.EnsureShellSurfaceZOrder();
-    }
-
-    private void SyncPopupWindow()
-    {
-        if (_viewModel.ActivePopupSurface == BarPopupSurfaceKind.None)
-        {
-            ClosePopupWindow();
-            return;
-        }
-
-        if (ResolvePopupAnchorBounds(_viewModel.ActivePopupSurface) is null)
-        {
-            _viewModel.ClosePopup();
-            return;
-        }
-
-        if (_popupWindow is null
-            || _popupWindow.PopupKind != _viewModel.ActivePopupSurface
-            || _popupWindow.IsPinned != _viewModel.IsPopupPinned)
-        {
-            ClosePopupWindow();
-
-            _popupWindow = new AnchoredPopupWindow(
-                _viewModel,
-                _logger,
-                _viewModel.ActivePopupSurface,
-                _viewModel.IsPopupPinned,
-                () => ShellSurfaceWindowing.GetWindowBounds(this),
-                () => ResolvePopupAnchorBounds(_viewModel.ActivePopupSurface),
-                OnPopupDismissRequested,
-                OnPopupHoverChanged);
-            _popupWindow.Closed += OnPopupWindowClosed;
-            _popupWindow.PrewarmShellSurface();
-        }
-
-        _popupWindow.ShowSurface();
-        _popupWindow.RefreshPlacement();
-        _popupWindow.EnsureShellSurfaceZOrder();
     }
 
     private RectInt32? ResolvePopupAnchorBounds(BarPopupSurfaceKind popupKind)
@@ -462,96 +284,6 @@ public sealed partial class MainWindow : Window
         return true;
     }
 
-    private void OnPanelDismissRequested(BarPanelSurfaceKind panelKind)
-    {
-        _viewModel.ClosePanel(panelKind);
-    }
-
-    private void OnPopupDismissRequested(BarPopupSurfaceKind popupKind)
-    {
-        _viewModel.ClosePopup(popupKind);
-    }
-
-    private void OnPopupHoverChanged(bool isPointerOver)
-    {
-        _isPopupHovered = isPointerOver;
-
-        if (isPointerOver)
-        {
-            CancelTransientPopupCloseEvaluation();
-        }
-        else
-        {
-            ScheduleTransientPopupCloseEvaluation();
-        }
-    }
-
-    private void HideLeftPanelWindow()
-    {
-        _leftPanelWindow?.HideSurface();
-    }
-
-    private void HideRightPanelWindow()
-    {
-        _rightPanelWindow?.HideSurface();
-    }
-
-    private void DestroyLeftPanelWindow()
-    {
-        if (_leftPanelWindow is null)
-        {
-            return;
-        }
-
-        _leftPanelWindow.Closed -= OnLeftPanelWindowClosed;
-        _leftPanelWindow.Close();
-        _leftPanelWindow = null;
-    }
-
-    private void DestroyRightPanelWindow()
-    {
-        if (_rightPanelWindow is null)
-        {
-            return;
-        }
-
-        _rightPanelWindow.Closed -= OnRightPanelWindowClosed;
-        _rightPanelWindow.Close();
-        _rightPanelWindow = null;
-    }
-
-    private void ClosePopupWindow()
-    {
-        if (_popupWindow is null)
-        {
-            return;
-        }
-
-        _popupWindow.Closed -= OnPopupWindowClosed;
-        _popupWindow.Close();
-        _popupWindow = null;
-        _isPopupHovered = false;
-    }
-
-    private void OnLeftPanelWindowClosed(object sender, WindowEventArgs args)
-    {
-        _leftPanelWindow = null;
-        _viewModel.ClosePanel(BarPanelSurfaceKind.LeftSidebar);
-    }
-
-    private void OnRightPanelWindowClosed(object sender, WindowEventArgs args)
-    {
-        _rightPanelWindow = null;
-        _viewModel.ClosePanel(BarPanelSurfaceKind.RightSidebar);
-    }
-
-    private void OnPopupWindowClosed(object sender, WindowEventArgs args)
-    {
-        _popupWindow = null;
-        _isPopupHovered = false;
-        _viewModel.ClosePopup();
-    }
-
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
     {
         EnsureShellSurfaceZOrder();
@@ -567,7 +299,7 @@ public sealed partial class MainWindow : Window
         if (e.PropertyName == nameof(BarViewModel.SurfacePlacement))
         {
             ConfigureWindow();
-            SyncAuxiliarySurfaces();
+            _transientSurfaceCoordinator.SyncSurfaces();
             return;
         }
 
@@ -575,7 +307,7 @@ public sealed partial class MainWindow : Window
             || e.PropertyName == nameof(BarViewModel.ActivePopupSurface)
             || e.PropertyName == nameof(BarViewModel.IsPopupPinned))
         {
-            SyncAuxiliarySurfaces();
+            _transientSurfaceCoordinator.SyncSurfaces();
         }
     }
 
@@ -589,14 +321,6 @@ public sealed partial class MainWindow : Window
             _topmostEnforcerTimer = null;
         }
 
-        if (_transientPopupCloseTimer is not null)
-        {
-            _transientPopupCloseTimer.Stop();
-            _transientPopupCloseTimer = null;
-        }
-
-        ClosePopupWindow();
-        DestroyLeftPanelWindow();
-        DestroyRightPanelWindow();
+        _transientSurfaceCoordinator.Dispose();
     }
 }
