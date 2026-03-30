@@ -32,6 +32,9 @@ public sealed class BarViewModel : BindableBase
     private bool _isAudioAvailable;
     private bool _hasNotifications;
     private BarSurfacePlacementModel _surfacePlacement = BarSurfacePlacementModel.Fallback;
+    private BarPanelSurfaceKind _activePanelSurface;
+    private BarPopupSurfaceKind _activePopupSurface;
+    private bool _isPopupPinned;
     private Brush _connectionStateBackground = CreateBrush("#202836");
     private Brush _connectionStateBorderBrush = CreateBrush("#303A4B");
     private Brush _connectionStateForeground = CreateBrush("#A1AEC4");
@@ -188,6 +191,137 @@ public sealed class BarViewModel : BindableBase
         private set => SetProperty(ref _surfacePlacement, value);
     }
 
+    public BarPanelSurfaceKind ActivePanelSurface
+    {
+        get => _activePanelSurface;
+        private set
+        {
+            if (SetProperty(ref _activePanelSurface, value))
+            {
+                OnPropertyChanged(nameof(IsLeftPanelOpen));
+                OnPropertyChanged(nameof(IsRightPanelOpen));
+            }
+        }
+    }
+
+    public bool IsLeftPanelOpen => ActivePanelSurface == BarPanelSurfaceKind.LeftSidebar;
+
+    public bool IsRightPanelOpen => ActivePanelSurface == BarPanelSurfaceKind.RightSidebar;
+
+    public BarPopupSurfaceKind ActivePopupSurface
+    {
+        get => _activePopupSurface;
+        private set => SetProperty(ref _activePopupSurface, value);
+    }
+
+    public bool IsPopupPinned
+    {
+        get => _isPopupPinned;
+        private set => SetProperty(ref _isPopupPinned, value);
+    }
+
+    public int VisibleWorkspaceCount => Workspaces.Count;
+
+    public int OccupiedWorkspaceCount => Workspaces.Count(x => x.IsOccupied || x.IsActive);
+
+    public string ActiveWorkspaceIdText
+    {
+        get
+        {
+            var activeWorkspace = Workspaces.FirstOrDefault(x => x.IsActive);
+            return activeWorkspace is null ? "0" : activeWorkspace.Id.ToString();
+        }
+    }
+
+    public void TogglePanel(BarPanelSurfaceKind panelKind)
+    {
+        if (panelKind == BarPanelSurfaceKind.None)
+        {
+            CloseAllTransientSurfaces();
+            return;
+        }
+
+        if (ActivePanelSurface == panelKind)
+        {
+            ActivePanelSurface = BarPanelSurfaceKind.None;
+            return;
+        }
+
+        ActivePopupSurface = BarPopupSurfaceKind.None;
+        IsPopupPinned = false;
+        ActivePanelSurface = panelKind;
+    }
+
+    public void ClosePanel(BarPanelSurfaceKind? onlyIfKind = null)
+    {
+        if (onlyIfKind is not null && ActivePanelSurface != onlyIfKind.Value)
+        {
+            return;
+        }
+
+        ActivePanelSurface = BarPanelSurfaceKind.None;
+    }
+
+    public void ShowPopup(BarPopupSurfaceKind popupKind, bool pinned)
+    {
+        if (popupKind == BarPopupSurfaceKind.None)
+        {
+            ClosePopup();
+            return;
+        }
+
+        if (ActivePopupSurface == popupKind && IsPopupPinned && pinned)
+        {
+            ClosePopup();
+            return;
+        }
+
+        if (ActivePanelSurface != BarPanelSurfaceKind.None)
+        {
+            ActivePanelSurface = BarPanelSurfaceKind.None;
+        }
+
+        ActivePopupSurface = popupKind;
+        IsPopupPinned = pinned;
+    }
+
+    public void ClosePopup(BarPopupSurfaceKind? onlyIfKind = null)
+    {
+        if (onlyIfKind is not null && ActivePopupSurface != onlyIfKind.Value)
+        {
+            return;
+        }
+
+        ActivePopupSurface = BarPopupSurfaceKind.None;
+        IsPopupPinned = false;
+    }
+
+    public void CloseTransientPopupIfNotPinned(BarPopupSurfaceKind popupKind)
+    {
+        if (ActivePopupSurface == popupKind && !IsPopupPinned)
+        {
+            ClosePopup();
+        }
+    }
+
+    public void TogglePopup(BarPopupSurfaceKind popupKind)
+    {
+        if (ActivePopupSurface == popupKind && IsPopupPinned)
+        {
+            ClosePopup();
+            return;
+        }
+
+        ShowPopup(popupKind, pinned: true);
+    }
+
+    public void CloseAllTransientSurfaces()
+    {
+        ActivePanelSurface = BarPanelSurfaceKind.None;
+        ActivePopupSurface = BarPopupSurfaceKind.None;
+        IsPopupPinned = false;
+    }
+
     private void OnModelChanged(object? sender, BarModel model)
     {
         if (_dispatcherQueue.HasThreadAccess)
@@ -267,6 +401,10 @@ public sealed class BarViewModel : BindableBase
             target.IsActive = source.IsActive;
             target.IsOccupied = source.IsOccupied;
         }
+
+        OnPropertyChanged(nameof(VisibleWorkspaceCount));
+        OnPropertyChanged(nameof(OccupiedWorkspaceCount));
+        OnPropertyChanged(nameof(ActiveWorkspaceIdText));
     }
 
     private static bool TryGetWorkspaceId(object? parameter, out int workspaceId)

@@ -6,15 +6,21 @@ internal static class NativeMethods
 {
     public const int GwlStyle = -16;
     public const int GwlExstyle = -20;
+    public const int GclpHbrbackground = -10;
     public const int DwmwaWindowCornerPreference = 33;
     public const int DwmwaBorderColor = 34;
+    public const int DwmwaUseImmersiveDarkMode = 20;
 
     public const uint SwpNomove = 0x0002;
     public const uint SwpNosize = 0x0001;
     public const uint SwpNoactivate = 0x0010;
     public const uint SwpNoownerzorder = 0x0200;
     public const uint SwpShowwindow = 0x0040;
+    public const uint SwpHidewindow = 0x0080;
     public const uint SwpFramechanged = 0x0020;
+    public const int SwHide = 0;
+    public const int SwShownoactivate = 4;
+    public const int SwShow = 5;
 
     public static readonly nint WsPopup = new(0x80000000);
     public static readonly nint WsCaption = new(0x00C00000);
@@ -95,6 +101,12 @@ internal static class NativeMethods
         int nIndex,
         nint dwNewLong);
 
+    [DllImport("user32.dll", EntryPoint = "SetClassLongPtrW", SetLastError = true)]
+    public static extern nint SetClassLongPtr(
+        nint hWnd,
+        int nIndex,
+        nint dwNewLong);
+
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetWindowPos(
@@ -105,6 +117,12 @@ internal static class NativeMethods
         int cx,
         int cy,
         uint uFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(
+        nint hWnd,
+        int nCmdShow);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -151,4 +169,8 @@ internal static class NativeMethods
         int dwAttribute,
         ref uint pvAttribute,
         int cbAttribute);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    public static extern nint CreateSolidBrush(
+        uint colorRef);
 }

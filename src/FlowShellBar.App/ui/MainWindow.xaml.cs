@@ -1,30 +1,34 @@
+using System.ComponentModel;
+
+using FlowShellBar.App.Application;
 using FlowShellBar.App.Application.Actions;
 using FlowShellBar.App.Application.ViewModels;
 using FlowShellBar.App.Diagnostics;
 
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-
 using Windows.Graphics;
-
-using WinRT.Interop;
 
 namespace FlowShellBar.App.Ui;
 
 public sealed partial class MainWindow : Window
 {
-    private static readonly NativeMethods.MonitorEnumProc MonitorBoundsLookupProc = OnMonitorBoundsLookup;
-
     private readonly BarViewModel _viewModel;
     private readonly IBarActionDispatcher _actionDispatcher;
     private readonly IAppLogger _logger;
     private DispatcherQueueTimer? _topmostEnforcerTimer;
+    private DispatcherQueueTimer? _transientPopupCloseTimer;
+    private SidebarPanelWindow? _leftPanelWindow;
+    private SidebarPanelWindow? _rightPanelWindow;
+    private AnchoredPopupWindow? _popupWindow;
     private bool _shellSurfacePrepared;
+    private bool _isResourcesAnchorHovered;
+    private bool _isWorkspaceAnchorHovered;
+    private bool _isClockAnchorHovered;
+    private bool _isPopupHovered;
 
     public MainWindow(
         BarViewModel viewModel,
@@ -40,11 +44,14 @@ public sealed partial class MainWindow : Window
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         Activated += OnWindowActivated;
         Closed += OnWindowClosed;
+
+        InitializeTransientPopupTimer();
     }
 
-    private async void OnOpenLauncherFlyoutClick(object sender, RoutedEventArgs e)
+    private void OnOpenLauncherFlyoutClick(object sender, RoutedEventArgs e)
     {
-        await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.OpenLauncher));
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
     }
 
     private async void OnToggleOverviewFlyoutClick(object sender, RoutedEventArgs e)
@@ -52,14 +59,16 @@ public sealed partial class MainWindow : Window
         await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.ToggleOverview));
     }
 
-    private async void OnOpenStatusPanelFlyoutClick(object sender, RoutedEventArgs e)
+    private void OnOpenStatusPanelFlyoutClick(object sender, RoutedEventArgs e)
     {
-        await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.OpenStatusPanel));
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePanel(BarPanelSurfaceKind.RightSidebar);
     }
 
-    private async void OnLeftZoneTapped(object sender, TappedRoutedEventArgs e)
+    private void OnLeftZoneTapped(object sender, TappedRoutedEventArgs e)
     {
-        await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.OpenLauncher));
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
         e.Handled = true;
     }
 
@@ -69,6 +78,107 @@ public sealed partial class MainWindow : Window
         await _actionDispatcher.DispatchAsync(new BarActionRequest(
             BarActionKind.AdjustBrightness,
             Delta: Math.Sign(delta)));
+        e.Handled = true;
+    }
+
+    private void OnResourcesAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _isResourcesAnchorHovered = true;
+        CancelTransientPopupCloseEvaluation();
+
+        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Resources)
+        {
+            _viewModel.ShowPopup(BarPopupSurfaceKind.Resources, pinned: false);
+        }
+    }
+
+    private void OnResourcesAnchorPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _isResourcesAnchorHovered = false;
+        ScheduleTransientPopupCloseEvaluation();
+    }
+
+    private void OnResourcesAnchorTapped(object sender, TappedRoutedEventArgs e)
+    {
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePopup(BarPopupSurfaceKind.Resources);
+        e.Handled = true;
+    }
+
+    private void OnClockAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _isClockAnchorHovered = true;
+        CancelTransientPopupCloseEvaluation();
+
+        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Clock)
+        {
+            _viewModel.ShowPopup(BarPopupSurfaceKind.Clock, pinned: false);
+        }
+    }
+
+    private void OnClockAnchorPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _isClockAnchorHovered = false;
+        ScheduleTransientPopupCloseEvaluation();
+    }
+
+    private void OnClockAnchorTapped(object sender, TappedRoutedEventArgs e)
+    {
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePopup(BarPopupSurfaceKind.Clock);
+        e.Handled = true;
+    }
+
+    private void OnWorkspaceAnchorPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _isWorkspaceAnchorHovered = true;
+        CancelTransientPopupCloseEvaluation();
+
+        if (!_viewModel.IsPopupPinned || _viewModel.ActivePopupSurface == BarPopupSurfaceKind.Workspaces)
+        {
+            _viewModel.ShowPopup(BarPopupSurfaceKind.Workspaces, pinned: false);
+        }
+    }
+
+    private void OnWorkspaceAnchorPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _isWorkspaceAnchorHovered = false;
+        ScheduleTransientPopupCloseEvaluation();
+    }
+
+    private void OnWorkspaceAnchorTapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (_viewModel.ActivePopupSurface != BarPopupSurfaceKind.None && _viewModel.IsPopupPinned)
+        {
+            _viewModel.ClosePopup();
+        }
+    }
+
+    private async void OnWorkspaceAnchorPointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        var delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
+        if (!TryResolveAdjacentWorkspaceId(delta, out var workspaceId))
+        {
+            return;
+        }
+
+        await _actionDispatcher.DispatchAsync(new BarActionRequest(
+            BarActionKind.SwitchWorkspace,
+            WorkspaceId: workspaceId));
+        e.Handled = true;
+    }
+
+    private async void OnWorkspaceAnchorRightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        CancelTransientPopupCloseEvaluation();
+        await _actionDispatcher.DispatchAsync(new BarActionRequest(BarActionKind.ToggleOverview));
+        e.Handled = true;
+    }
+
+    private void OnRightZoneTapped(object sender, TappedRoutedEventArgs e)
+    {
+        CancelTransientPopupCloseEvaluation();
+        _viewModel.TogglePanel(BarPanelSurfaceKind.RightSidebar);
         e.Handled = true;
     }
 
@@ -100,31 +210,19 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var hwnd = WindowNative.GetWindowHandle(this);
-        ApplyCompanionShellSurfaceStyle(hwnd);
-        ReassertTopmost(hwnd);
+        ShellSurfaceWindowing.EnsureTopmost(this, noActivate: true);
+        _leftPanelWindow?.EnsureShellSurfaceZOrder();
+        _rightPanelWindow?.EnsureShellSurfaceZOrder();
+        _popupWindow?.EnsureShellSurfaceZOrder();
     }
 
     private void ConfigureWindow()
     {
-        var hwnd = WindowNative.GetWindowHandle(this);
-        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-        var appWindow = GetAppWindowForCurrentWindow();
-
-        if (appWindow.Presenter is OverlappedPresenter presenter)
-        {
-            presenter.IsMinimizable = false;
-            presenter.IsMaximizable = false;
-            presenter.IsResizable = false;
-            presenter.SetBorderAndTitleBar(false, false);
-        }
-
-        appWindow.IsShownInSwitchers = false;
-        var horizontalMargin = GetEnvironmentInt("FLOWSHELL_BAR_HORIZONTAL_MARGIN_PX", 0);
-        var topMargin = GetEnvironmentInt("FLOWSHELL_BAR_TOP_MARGIN_PX", 0);
-        var barHeight = GetBarHeight();
-        var monitorBounds = ResolveShellAnchorBounds(windowId, barHeight, out var anchorSource);
-        var minWidth = GetEnvironmentInt("FLOWSHELL_BAR_MIN_WIDTH_PX", 960);
+        var horizontalMargin = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_HORIZONTAL_MARGIN_PX", 0);
+        var topMargin = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_TOP_MARGIN_PX", 0);
+        var barHeight = ShellSurfaceWindowing.GetBarHeight();
+        var monitorBounds = ShellSurfaceWindowing.ResolveShellAnchorBounds(this, _viewModel.SurfacePlacement, barHeight, out var anchorSource);
+        var minWidth = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_MIN_WIDTH_PX", 960);
         var availableWidth = Math.Max(320, monitorBounds.Width - (horizontalMargin * 2));
         var barWidth = Math.Min(Math.Max(minWidth, availableWidth), availableWidth);
 
@@ -134,211 +232,22 @@ public sealed partial class MainWindow : Window
             barWidth,
             barHeight);
 
-        ApplyCompanionShellSurfaceStyle(hwnd);
-        appWindow.MoveAndResize(bounds);
-        appWindow.Title = "FlowShellBar";
-
-        ReassertTopmost(hwnd);
-
-        var adjustedBounds = GetOuterBoundsForClientArea(hwnd, bounds);
-
-        ApplyTopmostBounds(hwnd, adjustedBounds);
+        ShellSurfaceWindowing.PrepareCompanionSurface(this, "FlowShellBar", bounds, noActivate: true);
 
         _logger.Info(
-            $"MainWindow configured: anchor={anchorSource}; client {bounds.Width}x{bounds.Height} at ({bounds.X},{bounds.Y}), outer {adjustedBounds.Width}x{adjustedBounds.Height} at ({adjustedBounds.X},{adjustedBounds.Y}).");
+            $"MainWindow configured: anchor={anchorSource}; client {bounds.Width}x{bounds.Height} at ({bounds.X},{bounds.Y}).");
     }
 
-    private static int GetEnvironmentInt(string variableName, int fallback)
+    private void InitializeTransientPopupTimer()
     {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        return int.TryParse(rawValue, out var value) ? value : fallback;
-    }
-
-    private static int GetBarHeight()
-    {
-        var configuredHeight = GetEnvironmentInt("FLOWSHELL_BAR_HEIGHT_PX", 37);
-        return configuredHeight is 40 or 41 or 46 or 60 ? 37 : configuredHeight;
-    }
-
-    private RectInt32 ResolveShellAnchorBounds(Microsoft.UI.WindowId windowId, int barHeight, out string anchorSource)
-    {
-        if (TryResolveFlowtileAnchorBounds(barHeight, out var wmBounds, out anchorSource))
+        _transientPopupCloseTimer = DispatcherQueue.GetForCurrentThread()?.CreateTimer();
+        if (_transientPopupCloseTimer is null)
         {
-            return wmBounds;
+            return;
         }
 
-        var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-        anchorSource = "displayarea-fallback";
-        return displayArea.OuterBounds;
-    }
-
-    private bool TryResolveFlowtileAnchorBounds(int barHeight, out RectInt32 bounds, out string anchorSource)
-    {
-        var placement = _viewModel.SurfacePlacement;
-        if (!placement.IsFlowtileBound)
-        {
-            bounds = default;
-            anchorSource = string.Empty;
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(placement.MonitorBinding)
-            && TryGetMonitorBoundsByBinding(placement.MonitorBinding, out bounds))
-        {
-            anchorSource = $"flowtilewm-binding:{placement.MonitorBinding}";
-            return true;
-        }
-
-        if (placement.WorkAreaWidth <= 0 || placement.WorkAreaHeight <= 0)
-        {
-            bounds = default;
-            anchorSource = string.Empty;
-            return false;
-        }
-
-        var reservedTop = GetEnvironmentInt("FLOWSHELL_RESERVED_TOP_PX", barHeight);
-        var top = placement.WorkAreaY >= reservedTop
-            ? placement.WorkAreaY - reservedTop
-            : placement.WorkAreaY;
-        var height = Math.Max(barHeight, placement.WorkAreaHeight + Math.Max(0, placement.WorkAreaY - top));
-
-        bounds = new RectInt32(
-            placement.WorkAreaX,
-            top,
-            placement.WorkAreaWidth,
-            height);
-        anchorSource = "flowtilewm-work-area";
-        return true;
-    }
-
-    private static bool TryGetMonitorBoundsByBinding(string monitorBinding, out RectInt32 bounds)
-    {
-        var state = new MonitorLookupState(monitorBinding);
-        var handle = GCHandle.Alloc(state);
-
-        try
-        {
-            NativeMethods.EnumDisplayMonitors(0, 0, MonitorBoundsLookupProc, GCHandle.ToIntPtr(handle));
-            if (state.Bounds is RectInt32 resolvedBounds)
-            {
-                bounds = resolvedBounds;
-                return true;
-            }
-        }
-        finally
-        {
-            if (handle.IsAllocated)
-            {
-                handle.Free();
-            }
-        }
-
-        bounds = default;
-        return false;
-    }
-
-    private static bool OnMonitorBoundsLookup(
-        nint monitorHandle,
-        nint _,
-        nint __,
-        nint userData)
-    {
-        var handle = GCHandle.FromIntPtr(userData);
-        if (handle.Target is not MonitorLookupState state)
-        {
-            return false;
-        }
-
-        var info = new NativeMethods.MONITORINFOEX
-        {
-            monitorInfo = new NativeMethods.MONITORINFO
-            {
-                cbSize = (uint)Marshal.SizeOf<NativeMethods.MONITORINFOEX>(),
-            },
-            szDevice = string.Empty,
-        };
-
-        if (!NativeMethods.GetMonitorInfo(monitorHandle, ref info))
-        {
-            return true;
-        }
-
-        if (!string.Equals(info.szDevice, state.TargetBinding, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        var rect = info.monitorInfo.rcMonitor;
-        state.Bounds = new RectInt32(
-            rect.Left,
-            rect.Top,
-            Math.Max(0, rect.Right - rect.Left),
-            Math.Max(0, rect.Bottom - rect.Top));
-        return false;
-    }
-
-    private void ApplyCompanionShellSurfaceStyle(nint hwnd)
-    {
-        var style = NativeMethods.GetWindowLongPtr(hwnd, NativeMethods.GwlStyle);
-        style |= NativeMethods.WsPopup;
-        style &= ~(NativeMethods.WsCaption
-            | NativeMethods.WsSysmenu
-            | NativeMethods.WsThickframe
-            | NativeMethods.WsMinimizebox
-            | NativeMethods.WsMaximizebox);
-
-        NativeMethods.SetWindowLongPtr(hwnd, NativeMethods.GwlStyle, style);
-
-        var exStyle = NativeMethods.GetWindowLongPtr(hwnd, NativeMethods.GwlExstyle);
-        exStyle |= NativeMethods.WsExToolwindow | NativeMethods.WsExNoactivate;
-        exStyle |= NativeMethods.WsExTopmost;
-        exStyle &= ~NativeMethods.WsExAppwindow;
-
-        NativeMethods.SetWindowLongPtr(hwnd, NativeMethods.GwlExstyle, exStyle);
-
-        var cornerPreference = (int)NativeMethods.DwmWindowCornerPreference.DoNotRound;
-        NativeMethods.DwmSetWindowAttributeInt(
-            hwnd,
-            NativeMethods.DwmwaWindowCornerPreference,
-            ref cornerPreference,
-            sizeof(int));
-
-        var borderColor = NativeMethods.DwmColorNone;
-        NativeMethods.DwmSetWindowAttributeUInt(
-            hwnd,
-            NativeMethods.DwmwaBorderColor,
-            ref borderColor,
-            sizeof(uint));
-    }
-
-    private static RectInt32 GetOuterBoundsForClientArea(nint hwnd, RectInt32 desiredClientBounds)
-    {
-        NativeMethods.GetWindowRect(hwnd, out var windowRect);
-        NativeMethods.GetClientRect(hwnd, out var clientRect);
-
-        var clientTopLeft = new NativeMethods.POINT(0, 0);
-        var clientBottomRight = new NativeMethods.POINT(clientRect.Right, clientRect.Bottom);
-
-        NativeMethods.ClientToScreen(hwnd, ref clientTopLeft);
-        NativeMethods.ClientToScreen(hwnd, ref clientBottomRight);
-
-        var leftInset = clientTopLeft.X - windowRect.Left;
-        var topInset = clientTopLeft.Y - windowRect.Top;
-        var rightInset = windowRect.Right - clientBottomRight.X;
-        var bottomInset = windowRect.Bottom - clientBottomRight.Y;
-
-        return new RectInt32(
-            desiredClientBounds.X - leftInset,
-            desiredClientBounds.Y - topInset,
-            desiredClientBounds.Width + leftInset + rightInset,
-            desiredClientBounds.Height + topInset + bottomInset);
-    }
-
-    private AppWindow GetAppWindowForCurrentWindow()
-    {
-        var hwnd = WindowNative.GetWindowHandle(this);
-        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-        return AppWindow.GetFromWindowId(windowId);
+        _transientPopupCloseTimer.Interval = TimeSpan.FromMilliseconds(160);
+        _transientPopupCloseTimer.Tick += OnTransientPopupCloseTimerTick;
     }
 
     private void StartTopmostEnforcer()
@@ -359,6 +268,290 @@ public sealed partial class MainWindow : Window
         _topmostEnforcerTimer.Start();
     }
 
+    private void ScheduleTransientPopupCloseEvaluation()
+    {
+        if (_transientPopupCloseTimer is null)
+        {
+            return;
+        }
+
+        _transientPopupCloseTimer.Stop();
+        _transientPopupCloseTimer.Start();
+    }
+
+    private void CancelTransientPopupCloseEvaluation()
+    {
+        _transientPopupCloseTimer?.Stop();
+    }
+
+    private void OnTransientPopupCloseTimerTick(object? sender, object e)
+    {
+        _transientPopupCloseTimer?.Stop();
+
+        if (_viewModel.IsPopupPinned)
+        {
+            return;
+        }
+
+        if (_isResourcesAnchorHovered || _isWorkspaceAnchorHovered || _isClockAnchorHovered || _isPopupHovered)
+        {
+            return;
+        }
+
+        _viewModel.ClosePopup();
+    }
+
+    private void SyncAuxiliarySurfaces()
+    {
+        SyncLeftPanelWindow();
+        SyncRightPanelWindow();
+        SyncPopupWindow();
+    }
+
+    private void SyncLeftPanelWindow()
+    {
+        if (_viewModel.ActivePanelSurface != BarPanelSurfaceKind.LeftSidebar)
+        {
+            HideLeftPanelWindow();
+            return;
+        }
+
+        if (_leftPanelWindow is null)
+        {
+            _leftPanelWindow = new SidebarPanelWindow(
+                _viewModel,
+                _logger,
+                BarPanelSurfaceKind.LeftSidebar,
+                () => ShellSurfaceWindowing.GetWindowBounds(this),
+                OnPanelDismissRequested);
+            _leftPanelWindow.Closed += OnLeftPanelWindowClosed;
+            _leftPanelWindow.PrewarmShellSurface();
+        }
+
+        _leftPanelWindow.ShowSurface();
+        _leftPanelWindow.EnsureShellSurfaceZOrder();
+    }
+
+    private void SyncRightPanelWindow()
+    {
+        if (_viewModel.ActivePanelSurface != BarPanelSurfaceKind.RightSidebar)
+        {
+            HideRightPanelWindow();
+            return;
+        }
+
+        if (_rightPanelWindow is null)
+        {
+            _rightPanelWindow = new SidebarPanelWindow(
+                _viewModel,
+                _logger,
+                BarPanelSurfaceKind.RightSidebar,
+                () => ShellSurfaceWindowing.GetWindowBounds(this),
+                OnPanelDismissRequested);
+            _rightPanelWindow.Closed += OnRightPanelWindowClosed;
+            _rightPanelWindow.PrewarmShellSurface();
+        }
+
+        _rightPanelWindow.ShowSurface();
+        _rightPanelWindow.EnsureShellSurfaceZOrder();
+    }
+
+    private void SyncPopupWindow()
+    {
+        if (_viewModel.ActivePopupSurface == BarPopupSurfaceKind.None)
+        {
+            ClosePopupWindow();
+            return;
+        }
+
+        if (ResolvePopupAnchorBounds(_viewModel.ActivePopupSurface) is null)
+        {
+            _viewModel.ClosePopup();
+            return;
+        }
+
+        if (_popupWindow is null
+            || _popupWindow.PopupKind != _viewModel.ActivePopupSurface
+            || _popupWindow.IsPinned != _viewModel.IsPopupPinned)
+        {
+            ClosePopupWindow();
+
+            _popupWindow = new AnchoredPopupWindow(
+                _viewModel,
+                _logger,
+                _viewModel.ActivePopupSurface,
+                _viewModel.IsPopupPinned,
+                () => ShellSurfaceWindowing.GetWindowBounds(this),
+                () => ResolvePopupAnchorBounds(_viewModel.ActivePopupSurface),
+                OnPopupDismissRequested,
+                OnPopupHoverChanged);
+            _popupWindow.Closed += OnPopupWindowClosed;
+            _popupWindow.PrewarmShellSurface();
+        }
+
+        _popupWindow.ShowSurface();
+        _popupWindow.RefreshPlacement();
+        _popupWindow.EnsureShellSurfaceZOrder();
+    }
+
+    private RectInt32? ResolvePopupAnchorBounds(BarPopupSurfaceKind popupKind)
+    {
+        FrameworkElement? anchor = popupKind switch
+        {
+            BarPopupSurfaceKind.Resources => ResourcesAnchor,
+            BarPopupSurfaceKind.Workspaces => WorkspaceAnchor,
+            BarPopupSurfaceKind.Clock => ClockAnchor,
+            _ => null,
+        };
+
+        if (anchor is null)
+        {
+            return null;
+        }
+
+        return ShellSurfaceWindowing.TryGetElementScreenBounds(this, anchor, out var bounds)
+            ? bounds
+            : null;
+    }
+
+    private bool TryResolveAdjacentWorkspaceId(int wheelDelta, out int workspaceId)
+    {
+        if (_viewModel.Workspaces.Count == 0)
+        {
+            workspaceId = 0;
+            return false;
+        }
+
+        var activeIndex = -1;
+        for (var index = 0; index < _viewModel.Workspaces.Count; index++)
+        {
+            if (_viewModel.Workspaces[index].IsActive)
+            {
+                activeIndex = index;
+                break;
+            }
+        }
+
+        if (activeIndex < 0)
+        {
+            workspaceId = _viewModel.Workspaces[0].Id;
+            return true;
+        }
+
+        var direction = Math.Sign(wheelDelta);
+        if (direction == 0)
+        {
+            workspaceId = 0;
+            return false;
+        }
+
+        var targetIndex = direction < 0
+            ? activeIndex + 1
+            : activeIndex - 1;
+
+        if (targetIndex < 0)
+        {
+            targetIndex = _viewModel.Workspaces.Count - 1;
+        }
+        else if (targetIndex >= _viewModel.Workspaces.Count)
+        {
+            targetIndex = 0;
+        }
+
+        workspaceId = _viewModel.Workspaces[targetIndex].Id;
+        return true;
+    }
+
+    private void OnPanelDismissRequested(BarPanelSurfaceKind panelKind)
+    {
+        _viewModel.ClosePanel(panelKind);
+    }
+
+    private void OnPopupDismissRequested(BarPopupSurfaceKind popupKind)
+    {
+        _viewModel.ClosePopup(popupKind);
+    }
+
+    private void OnPopupHoverChanged(bool isPointerOver)
+    {
+        _isPopupHovered = isPointerOver;
+
+        if (isPointerOver)
+        {
+            CancelTransientPopupCloseEvaluation();
+        }
+        else
+        {
+            ScheduleTransientPopupCloseEvaluation();
+        }
+    }
+
+    private void HideLeftPanelWindow()
+    {
+        _leftPanelWindow?.HideSurface();
+    }
+
+    private void HideRightPanelWindow()
+    {
+        _rightPanelWindow?.HideSurface();
+    }
+
+    private void DestroyLeftPanelWindow()
+    {
+        if (_leftPanelWindow is null)
+        {
+            return;
+        }
+
+        _leftPanelWindow.Closed -= OnLeftPanelWindowClosed;
+        _leftPanelWindow.Close();
+        _leftPanelWindow = null;
+    }
+
+    private void DestroyRightPanelWindow()
+    {
+        if (_rightPanelWindow is null)
+        {
+            return;
+        }
+
+        _rightPanelWindow.Closed -= OnRightPanelWindowClosed;
+        _rightPanelWindow.Close();
+        _rightPanelWindow = null;
+    }
+
+    private void ClosePopupWindow()
+    {
+        if (_popupWindow is null)
+        {
+            return;
+        }
+
+        _popupWindow.Closed -= OnPopupWindowClosed;
+        _popupWindow.Close();
+        _popupWindow = null;
+        _isPopupHovered = false;
+    }
+
+    private void OnLeftPanelWindowClosed(object sender, WindowEventArgs args)
+    {
+        _leftPanelWindow = null;
+        _viewModel.ClosePanel(BarPanelSurfaceKind.LeftSidebar);
+    }
+
+    private void OnRightPanelWindowClosed(object sender, WindowEventArgs args)
+    {
+        _rightPanelWindow = null;
+        _viewModel.ClosePanel(BarPanelSurfaceKind.RightSidebar);
+    }
+
+    private void OnPopupWindowClosed(object sender, WindowEventArgs args)
+    {
+        _popupWindow = null;
+        _isPopupHovered = false;
+        _viewModel.ClosePopup();
+    }
+
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
     {
         EnsureShellSurfaceZOrder();
@@ -366,12 +559,24 @@ public sealed partial class MainWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!_shellSurfacePrepared || e.PropertyName != nameof(BarViewModel.SurfacePlacement))
+        if (!_shellSurfacePrepared)
         {
             return;
         }
 
-        ConfigureWindow();
+        if (e.PropertyName == nameof(BarViewModel.SurfacePlacement))
+        {
+            ConfigureWindow();
+            SyncAuxiliarySurfaces();
+            return;
+        }
+
+        if (e.PropertyName == nameof(BarViewModel.ActivePanelSurface)
+            || e.PropertyName == nameof(BarViewModel.ActivePopupSurface)
+            || e.PropertyName == nameof(BarViewModel.IsPopupPinned))
+        {
+            SyncAuxiliarySurfaces();
+        }
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
@@ -383,49 +588,15 @@ public sealed partial class MainWindow : Window
             _topmostEnforcerTimer.Stop();
             _topmostEnforcerTimer = null;
         }
-    }
 
-    private static void ReassertTopmost(nint hwnd)
-    {
-        NativeMethods.SetWindowPos(
-            hwnd,
-            NativeMethods.HwndTopmost,
-            0,
-            0,
-            0,
-            0,
-            NativeMethods.SwpNomove
-            | NativeMethods.SwpNosize
-            | NativeMethods.SwpNoactivate
-            | NativeMethods.SwpNoownerzorder
-            | NativeMethods.SwpShowwindow
-            | NativeMethods.SwpFramechanged);
-    }
-
-    private static void ApplyTopmostBounds(nint hwnd, RectInt32 bounds)
-    {
-        NativeMethods.SetWindowPos(
-            hwnd,
-            NativeMethods.HwndTopmost,
-            bounds.X,
-            bounds.Y,
-            bounds.Width,
-            bounds.Height,
-            NativeMethods.SwpNoactivate
-            | NativeMethods.SwpNoownerzorder
-            | NativeMethods.SwpShowwindow
-            | NativeMethods.SwpFramechanged);
-    }
-
-    private sealed class MonitorLookupState
-    {
-        public MonitorLookupState(string targetBinding)
+        if (_transientPopupCloseTimer is not null)
         {
-            TargetBinding = targetBinding;
+            _transientPopupCloseTimer.Stop();
+            _transientPopupCloseTimer = null;
         }
 
-        public string TargetBinding { get; }
-
-        public RectInt32? Bounds { get; set; }
+        ClosePopupWindow();
+        DestroyLeftPanelWindow();
+        DestroyRightPanelWindow();
     }
 }

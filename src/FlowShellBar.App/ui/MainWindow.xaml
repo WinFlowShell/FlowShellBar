@@ -58,17 +58,6 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
-            <Style x:Key="GhostIconButtonStyle" TargetType="Button">
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="Width" Value="24" />
-                <Setter Property="Height" Value="24" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="CornerRadius" Value="0" />
-                <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                <Setter Property="FontFamily" Value="JetBrains Mono" />
-            </Style>
-
             <MenuFlyout x:Key="LeftZoneFlyout">
                 <MenuFlyoutItem Text="Open Launcher" Click="OnOpenLauncherFlyoutClick" />
                 <MenuFlyoutItem Text="Toggle Overview" Click="OnToggleOverviewFlyoutClick" />
@@ -149,108 +138,143 @@
                         Orientation="Horizontal"
                         Spacing="7"
                         VerticalAlignment="Center">
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="3"
-                            VerticalAlignment="Center">
-                            <Ellipse
-                                Width="6"
-                                Height="6"
-                                Fill="#C8CFDD"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                Style="{StaticResource SmallTextStyle}"
-                                Text="{Binding MemoryUsageText}" />
-                        </StackPanel>
+                        <Border
+                            x:Name="ResourcesAnchor"
+                            Background="Transparent"
+                            CornerRadius="8"
+                            Padding="3,2"
+                            PointerEntered="OnResourcesAnchorPointerEntered"
+                            PointerExited="OnResourcesAnchorPointerExited"
+                            Tapped="OnResourcesAnchorTapped">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="7"
+                                VerticalAlignment="Center">
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="3"
+                                    VerticalAlignment="Center">
+                                    <Ellipse
+                                        Width="6"
+                                        Height="6"
+                                        Fill="#C8CFDD"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Style="{StaticResource SmallTextStyle}"
+                                        Text="{Binding MemoryUsageText}" />
+                                </StackPanel>
 
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="3"
-                            VerticalAlignment="Center">
-                            <Ellipse
-                                Width="6"
-                                Height="6"
-                                Fill="#D4D7E2"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                Style="{StaticResource SmallTextStyle}"
-                                Text="{Binding CpuUsageText}" />
-                        </StackPanel>
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="3"
+                                    VerticalAlignment="Center">
+                                    <Ellipse
+                                        Width="6"
+                                        Height="6"
+                                        Fill="#D4D7E2"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Style="{StaticResource SmallTextStyle}"
+                                        Text="{Binding CpuUsageText}" />
+                                </StackPanel>
 
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="3"
-                            VerticalAlignment="Center">
-                            <Ellipse
-                                Width="6"
-                                Height="6"
-                                Fill="#B8BCC7"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                Style="{StaticResource SmallTextStyle}"
-                                Text="{Binding TemperatureText}" />
-                        </StackPanel>
+                                <StackPanel
+                                    Orientation="Horizontal"
+                                    Spacing="3"
+                                    VerticalAlignment="Center">
+                                    <Ellipse
+                                        Width="6"
+                                        Height="6"
+                                        Fill="#B8BCC7"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Style="{StaticResource SmallTextStyle}"
+                                        Text="{Binding TemperatureText}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
-                    <ItemsControl ItemsSource="{Binding Workspaces}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <Border
+                        x:Name="WorkspaceAnchor"
+                        Background="Transparent"
+                        Padding="0"
+                        PointerEntered="OnWorkspaceAnchorPointerEntered"
+                        PointerExited="OnWorkspaceAnchorPointerExited"
+                        PointerWheelChanged="OnWorkspaceAnchorPointerWheelChanged"
+                        RightTapped="OnWorkspaceAnchorRightTapped"
+                        Tapped="OnWorkspaceAnchorTapped">
+                        <ItemsControl ItemsSource="{Binding Workspaces}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
 
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button
-                                    Width="14"
-                                    Height="14"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    CornerRadius="7"
-                                    Command="{Binding DataContext.SwitchWorkspaceCommand, ElementName=ShellRoot}"
-                                    CommandParameter="{Binding Id}">
-                                    <Grid>
-                                        <Ellipse
-                                            Width="14"
-                                            Height="14"
-                                            Fill="{Binding IsActive, Converter={StaticResource WorkspaceActiveToBrushConverter}}" />
-                                        <Ellipse
-                                            Width="8"
-                                            Height="8"
-                                            Stroke="{Binding IsOccupied, Converter={StaticResource WorkspaceOccupiedBorderConverter}}"
-                                            StrokeThickness="1.1" />
-                                        <Ellipse
-                                            Width="2.5"
-                                            Height="2.5"
-                                            Fill="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}" />
-                                    </Grid>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button
+                                        Width="14"
+                                        Height="14"
+                                        Padding="0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        CornerRadius="7"
+                                        Command="{Binding DataContext.SwitchWorkspaceCommand, ElementName=ShellRoot}"
+                                        CommandParameter="{Binding Id}">
+                                        <Grid>
+                                            <Ellipse
+                                                Width="14"
+                                                Height="14"
+                                                Fill="{Binding IsActive, Converter={StaticResource WorkspaceActiveToBrushConverter}}" />
+                                            <Ellipse
+                                                Width="8"
+                                                Height="8"
+                                                Stroke="{Binding IsOccupied, Converter={StaticResource WorkspaceOccupiedBorderConverter}}"
+                                                StrokeThickness="1.1" />
+                                            <Ellipse
+                                                Width="2.5"
+                                                Height="2.5"
+                                                Fill="{Binding IsActive, Converter={StaticResource WorkspaceForegroundConverter}}" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
 
-                    <StackPanel
-                        Orientation="Horizontal"
-                        Spacing="5"
-                        VerticalAlignment="Center">
-                        <TextBlock
-                            Style="{StaticResource PrimaryTextStyle}"
-                            Text="{Binding CurrentTime}" />
-                        <TextBlock
-                            Style="{StaticResource DateTextStyle}"
-                            Text="{Binding CurrentDate}" />
-                    </StackPanel>
+                    <Border
+                        x:Name="ClockAnchor"
+                        Background="Transparent"
+                        CornerRadius="8"
+                        Padding="3,2"
+                        PointerEntered="OnClockAnchorPointerEntered"
+                        PointerExited="OnClockAnchorPointerExited"
+                        Tapped="OnClockAnchorTapped">
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="5"
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                Style="{StaticResource PrimaryTextStyle}"
+                                Text="{Binding CurrentTime}" />
+                            <TextBlock
+                                Style="{StaticResource DateTextStyle}"
+                                Text="{Binding CurrentDate}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <StackPanel
                     Grid.Column="2"
+                    x:Name="RightZone"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
                     Spacing="12"
                     Background="Transparent"
                     ContextFlyout="{StaticResource StatusFlyout}"
+                    Tapped="OnRightZoneTapped"
                     PointerWheelChanged="OnRightZonePointerWheelChanged">
 
                     <StackPanel
@@ -265,17 +289,13 @@
                             Text="26°C" />
                     </StackPanel>
 
-                    <Button
-                        Command="{Binding OpenStatusPanelCommand}"
-                        Style="{StaticResource GhostIconButtonStyle}">
-                        <TextBlock
-                            Foreground="{StaticResource PrimaryTextBrush}"
-                            FontFamily="Segoe Fluent Icons"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="&#xE80F;" />
-                    </Button>
+                    <TextBlock
+                        Foreground="{StaticResource PrimaryTextBrush}"
+                        FontFamily="Segoe Fluent Icons"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        Text="&#xE80F;" />
                 </StackPanel>
             </Grid>
         </Border>
