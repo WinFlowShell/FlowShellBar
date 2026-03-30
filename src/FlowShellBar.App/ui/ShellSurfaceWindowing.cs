@@ -29,6 +29,26 @@ internal static class ShellSurfaceWindowing
         return configuredHeight is 37 or 41 or 46 or 60 ? 40 : configuredHeight;
     }
 
+    public static int GetLeftSidebarAttachedWidth()
+    {
+        return GetEnvironmentInt("FLOWSHELL_LEFT_SIDEBAR_WIDTH_PX", 460);
+    }
+
+    public static int GetLeftSidebarDetachedWidth()
+    {
+        return GetEnvironmentInt("FLOWSHELL_LEFT_SIDEBAR_DETACHED_WIDTH_PX", 520);
+    }
+
+    public static int GetLeftSidebarPinnedWidth()
+    {
+        return GetEnvironmentInt("FLOWSHELL_LEFT_SIDEBAR_PINNED_WIDTH_PX", 420);
+    }
+
+    public static int GetRightSidebarWidth()
+    {
+        return GetEnvironmentInt("FLOWSHELL_RIGHT_SIDEBAR_WIDTH_PX", 460);
+    }
+
     public static AppWindow GetAppWindow(Window window)
     {
         var hwnd = WindowNative.GetWindowHandle(window);

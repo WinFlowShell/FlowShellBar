@@ -20,6 +20,8 @@ public sealed partial class MainWindow : Window
     private readonly IBarActionDispatcher _actionDispatcher;
     private readonly IAppLogger _logger;
     private readonly TransientSurfaceCoordinator _transientSurfaceCoordinator;
+    private LeftSidebarHotKeyHost? _leftSidebarHotKeyHost;
+    private LeftSidebarCommandPipeHost? _leftSidebarCommandPipeHost;
     private DispatcherQueueTimer? _topmostEnforcerTimer;
     private bool _shellSurfacePrepared;
 
@@ -42,7 +44,7 @@ public sealed partial class MainWindow : Window
 
     private void OnOpenLauncherFlyoutClick(object sender, RoutedEventArgs e)
     {
-        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
+        ExecuteLeftSidebarCommand(LeftSidebarCommandKind.Open);
     }
 
     private async void OnToggleOverviewFlyoutClick(object sender, RoutedEventArgs e)
@@ -57,7 +59,7 @@ public sealed partial class MainWindow : Window
 
     private void OnLeftZoneTapped(object sender, TappedRoutedEventArgs e)
     {
-        _transientSurfaceCoordinator.TogglePanel(BarPanelSurfaceKind.LeftSidebar);
+        ExecuteLeftSidebarCommand(LeftSidebarCommandKind.Toggle);
         e.Handled = true;
     }
 
@@ -161,6 +163,7 @@ public sealed partial class MainWindow : Window
         }
 
         ConfigureWindow();
+        StartLeftSidebarCommandHosts();
         StartTopmostEnforcer();
         _shellSurfacePrepared = true;
     }
@@ -181,13 +184,18 @@ public sealed partial class MainWindow : Window
         var horizontalMargin = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_HORIZONTAL_MARGIN_PX", 0);
         var topMargin = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_TOP_MARGIN_PX", 0);
         var barHeight = ShellSurfaceWindowing.GetBarHeight();
+        var pinnedLeftInset = _viewModel.IsLeftSidebarPinned
+            ? ShellSurfaceWindowing.GetLeftSidebarPinnedWidth()
+            : 0;
         var monitorBounds = ShellSurfaceWindowing.ResolveShellAnchorBounds(this, _viewModel.SurfacePlacement, barHeight, out var anchorSource);
         var minWidth = ShellSurfaceWindowing.GetEnvironmentInt("FLOWSHELL_BAR_MIN_WIDTH_PX", 960);
-        var availableWidth = Math.Max(320, monitorBounds.Width - (horizontalMargin * 2));
+        var leftInset = horizontalMargin + pinnedLeftInset;
+        var rightInset = horizontalMargin;
+        var availableWidth = Math.Max(320, monitorBounds.Width - leftInset - rightInset);
         var barWidth = Math.Min(Math.Max(minWidth, availableWidth), availableWidth);
 
         var bounds = new RectInt32(
-            monitorBounds.X + horizontalMargin,
+            monitorBounds.X + leftInset,
             monitorBounds.Y + topMargin,
             barWidth,
             barHeight);
@@ -196,6 +204,27 @@ public sealed partial class MainWindow : Window
 
         _logger.Info(
             $"MainWindow configured: anchor={anchorSource}; client {bounds.Width}x{bounds.Height} at ({bounds.X},{bounds.Y}).");
+    }
+
+    private void StartLeftSidebarCommandHosts()
+    {
+        if (_leftSidebarHotKeyHost is null)
+        {
+            _leftSidebarHotKeyHost = new LeftSidebarHotKeyHost(this, _logger, ExecuteLeftSidebarCommand);
+            _leftSidebarHotKeyHost.Start();
+        }
+
+        if (_leftSidebarCommandPipeHost is null)
+        {
+            var dispatcherQueue = DispatcherQueue.GetForCurrentThread()
+                ?? throw new InvalidOperationException("The UI dispatcher queue is not available.");
+
+            _leftSidebarCommandPipeHost = new LeftSidebarCommandPipeHost(
+                dispatcherQueue,
+                _logger,
+                ExecuteLeftSidebarCommand);
+            _leftSidebarCommandPipeHost.Start();
+        }
     }
 
     private void StartTopmostEnforcer()
@@ -303,10 +332,16 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (e.PropertyName == nameof(BarViewModel.ActivePanelSurface)
+        if (e.PropertyName == nameof(BarViewModel.LeftSidebarMode)
+            || e.PropertyName == nameof(BarViewModel.ActivePanelSurface)
             || e.PropertyName == nameof(BarViewModel.ActivePopupSurface)
             || e.PropertyName == nameof(BarViewModel.IsPopupPinned))
         {
+            if (e.PropertyName == nameof(BarViewModel.LeftSidebarMode))
+            {
+                ConfigureWindow();
+            }
+
             _transientSurfaceCoordinator.SyncSurfaces();
         }
     }
@@ -321,6 +356,15 @@ public sealed partial class MainWindow : Window
             _topmostEnforcerTimer = null;
         }
 
+        _leftSidebarHotKeyHost?.Dispose();
+        _leftSidebarHotKeyHost = null;
+        _leftSidebarCommandPipeHost?.Dispose();
+        _leftSidebarCommandPipeHost = null;
         _transientSurfaceCoordinator.Dispose();
+    }
+
+    private LeftSidebarCommandSnapshot ExecuteLeftSidebarCommand(LeftSidebarCommandKind commandKind)
+    {
+        return _transientSurfaceCoordinator.ExecuteLeftSidebarCommand(commandKind);
     }
 }

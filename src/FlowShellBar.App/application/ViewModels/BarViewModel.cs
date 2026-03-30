@@ -43,6 +43,7 @@ public sealed class BarViewModel : BindableBase
     private bool _isAudioAvailable;
     private bool _hasNotifications;
     private BarSurfacePlacementModel _surfacePlacement = BarSurfacePlacementModel.Fallback;
+    private LeftSidebarSurfaceMode _leftSidebarMode;
     private BarPanelSurfaceKind _activePanelSurface;
     private BarPopupSurfaceKind _activePopupSurface;
     private bool _isPopupPinned;
@@ -307,13 +308,42 @@ public sealed class BarViewModel : BindableBase
         {
             if (SetProperty(ref _activePanelSurface, value))
             {
-                OnPropertyChanged(nameof(IsLeftPanelOpen));
                 OnPropertyChanged(nameof(IsRightPanelOpen));
             }
         }
     }
 
-    public bool IsLeftPanelOpen => ActivePanelSurface == BarPanelSurfaceKind.LeftSidebar;
+    public LeftSidebarSurfaceMode LeftSidebarMode
+    {
+        get => _leftSidebarMode;
+        private set
+        {
+            if (SetProperty(ref _leftSidebarMode, value))
+            {
+                OnPropertyChanged(nameof(IsLeftPanelOpen));
+                OnPropertyChanged(nameof(IsLeftSidebarAttached));
+                OnPropertyChanged(nameof(IsLeftSidebarDetached));
+                OnPropertyChanged(nameof(IsLeftSidebarPinned));
+                OnPropertyChanged(nameof(LeftSidebarModeLabel));
+            }
+        }
+    }
+
+    public bool IsLeftPanelOpen => LeftSidebarMode != LeftSidebarSurfaceMode.Hidden;
+
+    public bool IsLeftSidebarAttached => LeftSidebarMode == LeftSidebarSurfaceMode.Attached;
+
+    public bool IsLeftSidebarDetached => LeftSidebarMode == LeftSidebarSurfaceMode.Detached;
+
+    public bool IsLeftSidebarPinned => LeftSidebarMode == LeftSidebarSurfaceMode.Pinned;
+
+    public string LeftSidebarModeLabel => LeftSidebarMode switch
+    {
+        LeftSidebarSurfaceMode.Attached => "ATTACHED",
+        LeftSidebarSurfaceMode.Detached => "DETACHED",
+        LeftSidebarSurfaceMode.Pinned => "PINNED",
+        _ => "HIDDEN",
+    };
 
     public bool IsRightPanelOpen => ActivePanelSurface == BarPanelSurfaceKind.RightSidebar;
 
@@ -350,19 +380,31 @@ public sealed class BarViewModel : BindableBase
             return;
         }
 
+        if (panelKind == BarPanelSurfaceKind.LeftSidebar)
+        {
+            ToggleLeftSidebar();
+            return;
+        }
+
         if (ActivePanelSurface == panelKind)
         {
             ActivePanelSurface = BarPanelSurfaceKind.None;
             return;
         }
 
-        ActivePopupSurface = BarPopupSurfaceKind.None;
-        IsPopupPinned = false;
+        ClosePopup();
+        CloseLeftSidebar();
         ActivePanelSurface = panelKind;
     }
 
     public void ClosePanel(BarPanelSurfaceKind? onlyIfKind = null)
     {
+        if (onlyIfKind == BarPanelSurfaceKind.LeftSidebar)
+        {
+            CloseLeftSidebar();
+            return;
+        }
+
         if (onlyIfKind is not null && ActivePanelSurface != onlyIfKind.Value)
         {
             return;
@@ -389,6 +431,8 @@ public sealed class BarViewModel : BindableBase
         {
             ActivePanelSurface = BarPanelSurfaceKind.None;
         }
+
+        CloseLeftSidebar();
 
         ActivePopupSurface = popupKind;
         IsPopupPinned = pinned;
@@ -426,9 +470,52 @@ public sealed class BarViewModel : BindableBase
 
     public void CloseAllTransientSurfaces()
     {
+        ClosePanel();
+        ClosePopup();
+        CloseLeftSidebar();
+    }
+
+    public void ToggleLeftSidebar()
+    {
+        if (IsLeftPanelOpen)
+        {
+            CloseLeftSidebar();
+            return;
+        }
+
+        OpenLeftSidebar(LeftSidebarSurfaceMode.Attached);
+    }
+
+    public void OpenLeftSidebar(LeftSidebarSurfaceMode mode = LeftSidebarSurfaceMode.Attached)
+    {
+        if (mode == LeftSidebarSurfaceMode.Hidden)
+        {
+            mode = LeftSidebarSurfaceMode.Attached;
+        }
+
+        ClosePopup();
         ActivePanelSurface = BarPanelSurfaceKind.None;
-        ActivePopupSurface = BarPopupSurfaceKind.None;
-        IsPopupPinned = false;
+        LeftSidebarMode = mode;
+    }
+
+    public void AttachLeftSidebar()
+    {
+        OpenLeftSidebar(LeftSidebarSurfaceMode.Attached);
+    }
+
+    public void DetachLeftSidebar()
+    {
+        OpenLeftSidebar(LeftSidebarSurfaceMode.Detached);
+    }
+
+    public void PinLeftSidebar()
+    {
+        OpenLeftSidebar(LeftSidebarSurfaceMode.Pinned);
+    }
+
+    public void CloseLeftSidebar()
+    {
+        LeftSidebarMode = LeftSidebarSurfaceMode.Hidden;
     }
 
     private void OnModelChanged(object? sender, BarModel model)

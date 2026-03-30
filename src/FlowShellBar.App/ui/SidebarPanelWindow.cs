@@ -15,13 +15,16 @@ using Windows.System;
 
 namespace FlowShellBar.App.Ui;
 
-public sealed class SidebarPanelWindow : Window
+internal sealed class SidebarPanelWindow : Window
 {
     private readonly BarViewModel _viewModel;
     private readonly IAppLogger _logger;
     private readonly BarPanelSurfaceKind _panelKind;
     private readonly Func<RectInt32> _barBoundsResolver;
     private readonly Action<BarPanelSurfaceKind> _dismissRequested;
+    private readonly Func<LeftSidebarSurfaceMode>? _leftSidebarModeResolver;
+    private readonly Func<LeftSidebarCommandKind, LeftSidebarCommandSnapshot>? _leftSidebarCommandRequested;
+    private Border? _surfaceChrome;
     private bool _surfacePrepared;
     private bool _isVisible;
     private bool _suppressDismissRequests;
@@ -31,13 +34,17 @@ public sealed class SidebarPanelWindow : Window
         IAppLogger logger,
         BarPanelSurfaceKind panelKind,
         Func<RectInt32> barBoundsResolver,
-        Action<BarPanelSurfaceKind> dismissRequested)
+        Action<BarPanelSurfaceKind> dismissRequested,
+        Func<LeftSidebarSurfaceMode>? leftSidebarModeResolver = null,
+        Func<LeftSidebarCommandKind, LeftSidebarCommandSnapshot>? leftSidebarCommandRequested = null)
     {
         _viewModel = viewModel;
         _logger = logger;
         _panelKind = panelKind;
         _barBoundsResolver = barBoundsResolver;
         _dismissRequested = dismissRequested;
+        _leftSidebarModeResolver = leftSidebarModeResolver;
+        _leftSidebarCommandRequested = leftSidebarCommandRequested;
 
         var content = BuildContent();
         content.DataContext = _viewModel;
@@ -128,15 +135,30 @@ public sealed class SidebarPanelWindow : Window
             Spacing = 16,
         };
 
-        contentStack.Children.Add(new StackPanel
+        var headerStack = new StackPanel
         {
             Spacing = 4,
-            Children =
-            {
-                ShellSurfaceVisualFactory.CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "LEFT SIDEBAR" : "RIGHT SIDEBAR", "#948F94", 10, FontWeights.SemiBold, 120),
-                ShellSurfaceVisualFactory.CreateTextBlock(_panelKind == BarPanelSurfaceKind.LeftSidebar ? "FlowShell Launcher" : "FlowShell Control", "#E7E1E7", 18, FontWeights.SemiBold),
-            },
-        });
+        };
+
+        headerStack.Children.Add(ShellSurfaceVisualFactory.CreateTextBlock(
+            _panelKind == BarPanelSurfaceKind.LeftSidebar ? "LEFT SIDEBAR" : "RIGHT SIDEBAR",
+            "#948F94",
+            10,
+            FontWeights.SemiBold,
+            120));
+        headerStack.Children.Add(ShellSurfaceVisualFactory.CreateTextBlock(
+            _panelKind == BarPanelSurfaceKind.LeftSidebar ? "FlowShell Launcher" : "FlowShell Control",
+            "#E7E1E7",
+            18,
+            FontWeights.SemiBold));
+
+        if (_panelKind == BarPanelSurfaceKind.LeftSidebar)
+        {
+            headerStack.Children.Add(CreateLeftSidebarModeRow());
+            headerStack.Children.Add(CreateLeftSidebarCommandRow());
+        }
+
+        contentStack.Children.Add(headerStack);
 
         contentStack.Children.Add(ShellSurfaceVisualFactory.CreateInfoCard("stub surface aligned to illogical-impulse shell vocabulary"));
 
@@ -149,15 +171,13 @@ public sealed class SidebarPanelWindow : Window
         };
 
         contentStack.Children.Add(scrollViewer);
-        var chrome = ShellSurfaceVisualFactory.CreateSurfaceChrome(
+        _surfaceChrome = ShellSurfaceVisualFactory.CreateSurfaceChrome(
             contentStack,
-            _panelKind == BarPanelSurfaceKind.LeftSidebar
-                ? new CornerRadius(0, 18, 18, 0)
-                : new CornerRadius(18, 0, 0, 18),
+            GetWindowCornerRadius(),
             new Thickness(20, 18, 20, 18),
             28);
-        chrome.Child = contentStack;
-        root.Children.Add(chrome);
+        _surfaceChrome.Child = contentStack;
+        root.Children.Add(_surfaceChrome);
         return root;
     }
 
@@ -275,14 +295,35 @@ public sealed class SidebarPanelWindow : Window
             out var anchorSource);
         var barBounds = _barBoundsResolver();
         var panelTop = barBounds.Y + barBounds.Height;
-
-        var width = 460;
+        var width = _panelKind == BarPanelSurfaceKind.LeftSidebar
+            ? GetLeftSidebarWidth()
+            : ShellSurfaceWindowing.GetRightSidebarWidth();
         var monitorBottom = monitorBounds.Y + monitorBounds.Height;
         var height = Math.Max(260, monitorBottom - panelTop);
         var y = panelTop;
         var x = _panelKind == BarPanelSurfaceKind.LeftSidebar
             ? monitorBounds.X
             : monitorBounds.X + monitorBounds.Width - width;
+
+        if (_panelKind == BarPanelSurfaceKind.LeftSidebar)
+        {
+            switch (GetCurrentLeftSidebarMode())
+            {
+                case LeftSidebarSurfaceMode.Detached:
+                    width = ShellSurfaceWindowing.GetLeftSidebarDetachedWidth();
+                    height = Math.Min(Math.Max(420, monitorBounds.Height - 112), Math.Max(420, monitorBounds.Height - 72));
+                    x = monitorBounds.X + 24;
+                    y = monitorBounds.Y + barHeight + 24;
+                    break;
+
+                case LeftSidebarSurfaceMode.Pinned:
+                    width = ShellSurfaceWindowing.GetLeftSidebarPinnedWidth();
+                    height = monitorBounds.Height;
+                    x = monitorBounds.X;
+                    y = monitorBounds.Y;
+                    break;
+            }
+        }
 
         if (offscreenWarmup)
         {
@@ -315,7 +356,8 @@ public sealed class SidebarPanelWindow : Window
             return;
         }
 
-        if (args.WindowActivationState == WindowActivationState.Deactivated)
+        if (args.WindowActivationState == WindowActivationState.Deactivated
+            && ShouldDismissOnDeactivation())
         {
             _dismissRequested(_panelKind);
             return;
@@ -326,8 +368,15 @@ public sealed class SidebarPanelWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_surfacePrepared && e.PropertyName == nameof(BarViewModel.SurfacePlacement))
+        if (_surfacePrepared
+            && (e.PropertyName == nameof(BarViewModel.SurfacePlacement)
+                || (_panelKind == BarPanelSurfaceKind.LeftSidebar && e.PropertyName == nameof(BarViewModel.LeftSidebarMode))))
         {
+            if (_surfaceChrome is not null)
+            {
+                _surfaceChrome.CornerRadius = GetWindowCornerRadius();
+            }
+
             ConfigureWindow(showWindow: _isVisible, offscreenWarmup: false);
         }
     }
@@ -356,6 +405,45 @@ public sealed class SidebarPanelWindow : Window
             cornerRadius: new CornerRadius(10));
     }
 
+    private UIElement CreateLeftSidebarModeRow()
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children =
+            {
+                ShellSurfaceVisualFactory.CreateTextBlock("host", "#948F94", 10, FontWeights.SemiBold),
+                ShellSurfaceVisualFactory.CreateBoundTextBlock(nameof(BarViewModel.LeftSidebarModeLabel), "#E7E1E7", 11, FontWeights.SemiBold),
+            },
+        };
+
+        return ShellSurfaceVisualFactory.CreatePanel(
+            row,
+            background: "#1B1A1C",
+            borderColor: "#343136",
+            padding: new Thickness(12, 8, 12, 8),
+            cornerRadius: new CornerRadius(14));
+    }
+
+    private UIElement CreateLeftSidebarCommandRow()
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6,
+            Children =
+            {
+                CreateLeftCommandChip("ATT", LeftSidebarCommandKind.Attach),
+                CreateLeftCommandChip("DET", LeftSidebarCommandKind.Detach),
+                CreateLeftCommandChip("PIN", LeftSidebarCommandKind.Pin),
+                CreateLeftCommandChip("X", LeftSidebarCommandKind.Close),
+            },
+        };
+
+        return row;
+    }
+
     private static UIElement CreateToolbarStrip(params string[] items)
     {
         var row = new StackPanel
@@ -380,6 +468,21 @@ public sealed class SidebarPanelWindow : Window
             borderColor: "#343136",
             padding: new Thickness(6),
             cornerRadius: new CornerRadius(18));
+    }
+
+    private UIElement CreateLeftCommandChip(string label, LeftSidebarCommandKind commandKind)
+    {
+        var border = new Border
+        {
+            Background = ShellSurfaceVisualFactory.CreateBrush("#1D1C1F"),
+            BorderBrush = ShellSurfaceVisualFactory.CreateBrush("#343136"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(10, 6, 10, 6),
+            Child = ShellSurfaceVisualFactory.CreateTextBlock(label, "#CBC5CA", 10, FontWeights.SemiBold),
+        };
+        border.Tapped += (_, _) => _leftSidebarCommandRequested?.Invoke(commandKind);
+        return border;
     }
 
     private static UIElement CreateSearchBarStub(string placeholder)
@@ -596,5 +699,47 @@ public sealed class SidebarPanelWindow : Window
                 ShellSurfaceVisualFactory.CreateTextBlock(subtitle, "#CBC5CA", 10, FontWeights.SemiBold),
             },
         });
+    }
+
+    private LeftSidebarSurfaceMode GetCurrentLeftSidebarMode()
+    {
+        return _panelKind == BarPanelSurfaceKind.LeftSidebar && _leftSidebarModeResolver is not null
+            ? _leftSidebarModeResolver()
+            : LeftSidebarSurfaceMode.Hidden;
+    }
+
+    private bool ShouldDismissOnDeactivation()
+    {
+        if (_panelKind != BarPanelSurfaceKind.LeftSidebar)
+        {
+            return true;
+        }
+
+        return GetCurrentLeftSidebarMode() == LeftSidebarSurfaceMode.Attached;
+    }
+
+    private CornerRadius GetWindowCornerRadius()
+    {
+        if (_panelKind != BarPanelSurfaceKind.LeftSidebar)
+        {
+            return new CornerRadius(18, 0, 0, 18);
+        }
+
+        return GetCurrentLeftSidebarMode() switch
+        {
+            LeftSidebarSurfaceMode.Detached => new CornerRadius(18),
+            LeftSidebarSurfaceMode.Pinned => new CornerRadius(0, 18, 18, 0),
+            _ => new CornerRadius(0, 18, 18, 0),
+        };
+    }
+
+    private int GetLeftSidebarWidth()
+    {
+        return GetCurrentLeftSidebarMode() switch
+        {
+            LeftSidebarSurfaceMode.Detached => ShellSurfaceWindowing.GetLeftSidebarDetachedWidth(),
+            LeftSidebarSurfaceMode.Pinned => ShellSurfaceWindowing.GetLeftSidebarPinnedWidth(),
+            _ => ShellSurfaceWindowing.GetLeftSidebarAttachedWidth(),
+        };
     }
 }

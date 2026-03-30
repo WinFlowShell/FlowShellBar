@@ -10,6 +10,10 @@ internal static class NativeMethods
     public const int DwmwaWindowCornerPreference = 33;
     public const int DwmwaBorderColor = 34;
     public const int DwmwaUseImmersiveDarkMode = 20;
+    public const int WmHotkey = 0x0312;
+    public const int WmNcdestroy = 0x0082;
+    public const uint ModAlt = 0x0001;
+    public const uint ModControl = 0x0002;
 
     public const uint SwpNomove = 0x0002;
     public const uint SwpNosize = 0x0001;
@@ -41,6 +45,14 @@ internal static class NativeMethods
         nint hdc,
         nint lprcMonitor,
         nint dwData);
+
+    public delegate nint SubclassProc(
+        nint hWnd,
+        uint uMsg,
+        nint wParam,
+        nint lParam,
+        nuint uIdSubclass,
+        nint dwRefData);
 
     public enum DwmWindowCornerPreference
     {
@@ -126,6 +138,20 @@ internal static class NativeMethods
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool RegisterHotKey(
+        nint hWnd,
+        int id,
+        uint fsModifiers,
+        uint vk);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnregisterHotKey(
+        nint hWnd,
+        int id);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetWindowRect(
         nint hWnd,
         out RECT lpRect);
@@ -173,4 +199,26 @@ internal static class NativeMethods
     [DllImport("gdi32.dll", SetLastError = true)]
     public static extern nint CreateSolidBrush(
         uint colorRef);
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowSubclass(
+        nint hWnd,
+        SubclassProc pfnSubclass,
+        nuint uIdSubclass,
+        nint dwRefData);
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool RemoveWindowSubclass(
+        nint hWnd,
+        SubclassProc pfnSubclass,
+        nuint uIdSubclass);
+
+    [DllImport("comctl32.dll")]
+    public static extern nint DefSubclassProc(
+        nint hWnd,
+        uint uMsg,
+        nint wParam,
+        nint lParam);
 }

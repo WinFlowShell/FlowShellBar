@@ -50,6 +50,40 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
         _viewModel.TogglePanel(panelKind);
     }
 
+    public LeftSidebarCommandSnapshot ExecuteLeftSidebarCommand(LeftSidebarCommandKind commandKind)
+    {
+        CancelTransientPopupCloseEvaluation();
+
+        switch (commandKind)
+        {
+            case LeftSidebarCommandKind.Toggle:
+                _viewModel.ToggleLeftSidebar();
+                break;
+
+            case LeftSidebarCommandKind.Open:
+                _viewModel.OpenLeftSidebar();
+                break;
+
+            case LeftSidebarCommandKind.Close:
+                _viewModel.CloseLeftSidebar();
+                break;
+
+            case LeftSidebarCommandKind.Detach:
+                _viewModel.DetachLeftSidebar();
+                break;
+
+            case LeftSidebarCommandKind.Pin:
+                _viewModel.PinLeftSidebar();
+                break;
+
+            case LeftSidebarCommandKind.Attach:
+                _viewModel.AttachLeftSidebar();
+                break;
+        }
+
+        return BuildLeftSidebarCommandSnapshot();
+    }
+
     public void TogglePinnedPopup(BarPopupSurfaceKind popupKind)
     {
         CancelTransientPopupCloseEvaluation();
@@ -143,7 +177,7 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
 
     private void SyncLeftPanelWindow()
     {
-        if (_viewModel.ActivePanelSurface != BarPanelSurfaceKind.LeftSidebar)
+        if (!_viewModel.IsLeftPanelOpen)
         {
             _leftPanelWindow?.HideSurface();
             return;
@@ -156,7 +190,9 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
                 _logger,
                 BarPanelSurfaceKind.LeftSidebar,
                 () => ShellSurfaceWindowing.GetWindowBounds(_ownerWindow),
-                OnPanelDismissRequested);
+                OnPanelDismissRequested,
+                () => _viewModel.LeftSidebarMode,
+                ExecuteLeftSidebarCommand);
             _leftPanelWindow.Closed += OnLeftPanelWindowClosed;
             _leftPanelWindow.PrewarmShellSurface();
         }
@@ -247,6 +283,12 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
 
     private void OnPanelDismissRequested(BarPanelSurfaceKind panelKind)
     {
+        if (panelKind == BarPanelSurfaceKind.LeftSidebar)
+        {
+            _viewModel.CloseLeftSidebar();
+            return;
+        }
+
         _viewModel.ClosePanel(panelKind);
     }
 
@@ -309,7 +351,7 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
     private void OnLeftPanelWindowClosed(object sender, WindowEventArgs args)
     {
         _leftPanelWindow = null;
-        _viewModel.ClosePanel(BarPanelSurfaceKind.LeftSidebar);
+        _viewModel.CloseLeftSidebar();
     }
 
     private void OnRightPanelWindowClosed(object sender, WindowEventArgs args)
@@ -323,5 +365,15 @@ internal sealed class TransientSurfaceCoordinator : IDisposable
         _popupWindow = null;
         _isPopupHovered = false;
         _viewModel.ClosePopup();
+    }
+
+    private LeftSidebarCommandSnapshot BuildLeftSidebarCommandSnapshot()
+    {
+        return new LeftSidebarCommandSnapshot(
+            Mode: _viewModel.LeftSidebarModeLabel,
+            IsOpen: _viewModel.IsLeftPanelOpen,
+            IsAttached: _viewModel.IsLeftSidebarAttached,
+            IsDetached: _viewModel.IsLeftSidebarDetached,
+            IsPinned: _viewModel.IsLeftSidebarPinned);
     }
 }
